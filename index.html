@@ -1,0 +1,1760 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Packshot Studio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tenor+Sans&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: two-pane workbench — parameter steps on the left, sticky 3D frame preview + live prompt on the right */
+:root {
+  --bg: #F1F0EC;
+  --surface: #FFFFFF;
+  --sunken: #E7E5DF;
+  --ink: #1C1A16;
+  --muted: #6E6A60;
+  --line: #D8D5CC;
+  --accent: #A8620F;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #F3E3CC;
+  --warn: #9A3B1F;
+  --warn-soft: #F6DDD3;
+  --ok: #3F6B3A;
+  --scrim: rgba(20, 18, 15, .45);
+  --font-display: "Tenor Sans", "Times New Roman", serif;
+  --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12110F; --surface: #1C1A17; --sunken: #26231F; --ink: #EEEAE2; --muted: #A39D91;
+    --line: #34302A; --accent: #E2A04A; --accent-ink: #1A1206; --accent-soft: #3A2A14;
+    --warn: #F08F6C; --warn-soft: #3B2018; --ok: #8DBE86; --scrim: rgba(0, 0, 0, .6); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12110F; --surface: #1C1A17; --sunken: #26231F; --ink: #EEEAE2; --muted: #A39D91;
+  --line: #34302A; --accent: #E2A04A; --accent-ink: #1A1206; --accent-soft: #3A2A14;
+  --warn: #F08F6C; --warn-soft: #3B2018; --ok: #8DBE86; --scrim: rgba(0, 0, 0, .6); color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 14px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 48px;
+}
+button, input, textarea, select { font: inherit; color: inherit; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+kbd { font-family: var(--font-mono); font-size: 11px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; background: var(--surface); }
+
+header.top {
+  max-width: 1320px; margin: 0 auto; padding-block: 28px 20px;
+  display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px;
+  border-bottom: 1px solid var(--line);
+}
+.brand h1 { font-family: var(--font-display); font-weight: 400; font-size: 30px; letter-spacing: .02em; margin: 0; line-height: 1.1; }
+.brand p { margin: 6px 0 0; color: var(--muted); max-width: 62ch; text-wrap: pretty; }
+.account { display: flex; align-items: center; gap: 10px; padding: 6px 12px 6px 6px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: 13px; min-width: 0; }
+.account img { width: 28px; height: 28px; border-radius: 50%; flex: none; }
+.account .dot { width: 28px; height: 28px; border-radius: 50%; background: var(--sunken); flex: none; }
+.account span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account small { color: var(--muted); }
+.account button { border: 0; background: none; color: var(--accent); font-weight: 600; cursor: pointer; padding: 0 0 0 4px; font-size: 13px; }
+
+main {
+  max-width: 1320px; margin: 24px auto 0;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 520px); gap: 28px; align-items: start;
+}
+@media (max-width: 980px) { main { grid-template-columns: minmax(0, 1fr); } }
+
+.steps { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 14px; }
+.step-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.step-no { font-family: var(--font-mono); font-size: 12px; color: var(--accent); font-variant-numeric: tabular-nums; }
+.step h2 { font-family: var(--font-display); font-weight: 400; font-size: 19px; margin: 0; letter-spacing: .01em; }
+.step .hint { color: var(--muted); font-size: 13px; margin: -6px 0 0; text-wrap: pretty; }
+.field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 20px; }
+
+/* parameter taken from reference */
+.from-ref { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 999px; }
+.lockable { transition: opacity .2s; }
+.is-locked { opacity: .38; pointer-events: none; user-select: none; }
+
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button, .chips button {
+  border: 1px solid var(--line); background: var(--bg); border-radius: 8px;
+  padding: 7px 12px; cursor: pointer; font-size: 13px; font-weight: 500; line-height: 1.25;
+  display: inline-flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left;
+  transition: border-color .15s, background .15s;
+}
+.seg button small, .chips button small { font-size: 11px; color: var(--muted); font-weight: 400; font-family: var(--font-mono); }
+.seg button:hover, .chips button:hover { border-color: var(--muted); }
+.seg button[aria-pressed="true"], .chips button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+.seg button[aria-pressed="true"] small, .chips button[aria-pressed="true"] small { color: var(--accent); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* rotation cards with 3D thumbnails */
+.rot-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.rot-grid button { align-items: center; padding: 6px 6px 8px; gap: 6px; }
+.rot-grid canvas, .rot-grid .ph { display: block; border-radius: 5px; background: var(--sunken); max-width: 100%; }
+.rot-grid button span { font-size: 12.5px; }
+
+.check { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.check input { margin: 2px 0 0; accent-color: var(--accent); width: 16px; height: 16px; flex: none; }
+.check span { display: flex; flex-direction: column; }
+.check small { color: var(--muted); font-size: 12px; }
+.fine { font-size: 12px; color: var(--muted); margin: 0; }
+
+/* step 1 */
+.upload-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 640px) { .upload-grid { grid-template-columns: minmax(0, 1fr); } }
+.upload-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.drop {
+  border: 1.5px dashed var(--line); border-radius: var(--r); background: var(--bg);
+  display: flex; gap: 16px; align-items: center; padding: 14px; cursor: pointer; position: relative;
+}
+.drop:hover, .drop.over, .drop:focus-within { border-color: var(--accent); }
+.drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.drop .thumb { position: relative; z-index: 1; pointer-events: none; width: 64px; height: 96px; flex: none; border-radius: 6px; background: var(--sunken); display: grid; place-items: center; }
+.drop .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; border-radius: 6px; }
+.drop .txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.drop .txt b { font-weight: 600; overflow-wrap: anywhere; }
+.drop .txt span { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.xbtn {
+  position: absolute; top: -8px; right: -8px; z-index: 2; pointer-events: auto;
+  width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--surface);
+  background: var(--ink); color: var(--surface); cursor: pointer; font-size: 14px; line-height: 1; padding: 0;
+  display: grid; place-items: center; opacity: 0; transform: scale(.8); transition: opacity .15s, transform .15s;
+}
+.drop:hover .xbtn, .xbtn:focus-visible, .ref:hover .xbtn, .ref:focus-within .xbtn { opacity: 1; transform: scale(1); }
+@media (hover: none) { .xbtn { opacity: 1; transform: none; } }
+.status { font-size: 12.5px; padding: 8px 10px; border-radius: 8px; }
+.status.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+.status.warn { color: var(--warn); background: var(--warn-soft); }
+.lib-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.save-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.save-row input { flex: 1 1 160px; min-width: 0; }
+
+.dims { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.dims-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.num { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.num-wrap { position: relative; }
+.num-wrap input { padding-right: 38px; }
+.num-wrap em { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-style: normal; font-family: var(--font-mono); font-size: 11px; color: var(--muted); pointer-events: none; }
+input[type="number"], input[type="text"] { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 10px; font-variant-numeric: tabular-nums; }
+input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.ratio { font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.mem { font-size: 12px; color: var(--ok); }
+
+.refs { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 8px; }
+.ref { position: relative; width: 76px; height: 76px; border-radius: 8px; background: var(--sunken); }
+.ref img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+.ref .n { position: absolute; left: 4px; bottom: 4px; font-family: var(--font-mono); font-size: 10px; background: rgba(0,0,0,.65); color: #fff; padding: 1px 5px; border-radius: 4px; }
+.exact { border: 1px solid var(--line); border-radius: var(--r); padding: 12px; background: var(--bg); }
+.exact.on { border-color: var(--accent); background: var(--accent-soft); }
+
+.tabs { display: inline-flex; background: var(--sunken); border-radius: 9px; padding: 3px; gap: 3px; align-self: flex-start; flex-wrap: wrap; }
+.tabs button { border: 0; background: transparent; padding: 7px 14px; border-radius: 7px; cursor: pointer; font-weight: 600; font-size: 13px; color: var(--muted); }
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.sw { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line); cursor: pointer; padding: 0; }
+.sw[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: 2px; }
+input[type="color"] { width: 44px; height: 32px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 2px; cursor: pointer; }
+.hex { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+textarea { width: 100%; min-height: 96px; resize: vertical; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 10px 12px; line-height: 1.5; }
+
+/* right pane */
+.side { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+@media (max-width: 980px) { .side { position: static; } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.panel-head h3 { font-family: var(--font-display); font-weight: 400; font-size: 17px; margin: 0; }
+.meta { font-family: var(--font-mono); font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.stage { background: repeating-conic-gradient(var(--sunken) 0 25%, var(--bg) 0 50%) 0 0 / 16px 16px; border-radius: 8px; padding: 14px; display: grid; place-items: center; height: 320px; }
+.frame { position: relative; overflow: hidden; box-shadow: 0 6px 24px rgba(0,0,0,.18); max-width: 100%; }
+.frame canvas { display: block; width: 100%; height: 100%; }
+.frame .bg { position: absolute; inset: 0; background-size: cover; background-position: center; }
+.frame .bottle { position: absolute; transform-origin: 50% 50%; filter: drop-shadow(0 8px 10px rgba(0,0,0,.28)); }
+.frame .copy { position: absolute; border: 1.5px dashed rgba(255,255,255,.8); border-radius: 4px; display: grid; place-items: center; color: rgba(255,255,255,.95); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; text-align: center; mix-blend-mode: difference; }
+.frame .veil { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; text-align: center; background: rgba(20,18,15,.55); color: #fff; font-size: 13px; }
+.thirds { position: absolute; inset: 0; pointer-events: none; background:
+  linear-gradient(to right, transparent calc(33.33% - .5px), rgba(255,255,255,.35) calc(33.33% - .5px) calc(33.33% + .5px), transparent calc(33.33% + .5px) calc(66.66% - .5px), rgba(255,255,255,.35) calc(66.66% - .5px) calc(66.66% + .5px), transparent calc(66.66% + .5px)),
+  linear-gradient(to bottom, transparent calc(33.33% - .5px), rgba(255,255,255,.35) calc(33.33% - .5px) calc(33.33% + .5px), transparent calc(33.33% + .5px) calc(66.66% - .5px), rgba(255,255,255,.35) calc(66.66% - .5px) calc(66.66% + .5px), transparent calc(66.66% + .5px)); mix-blend-mode: difference; }
+.note { font-size: 12px; color: var(--muted); margin: 0; text-wrap: pretty; }
+
+.prompt { font-family: var(--font-mono); font-size: 12px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; max-height: 380px; overflow: auto; margin: 0; }
+.prompt .h { color: var(--accent); font-weight: 500; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 9px 14px; cursor: pointer; font-weight: 600; font-size: 13px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.small { padding: 6px 10px; font-size: 12.5px; }
+.btn.danger { color: var(--warn); border-color: var(--warn); }
+.btn:not(:disabled):hover { filter: brightness(1.05); }
+.toast { font-size: 12.5px; color: var(--ok); align-self: center; }
+
+.handoff { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.handoff li { display: flex; gap: 10px; align-items: center; font-size: 13px; flex-wrap: wrap; }
+.handoff .tn { width: 34px; height: 34px; border-radius: 6px; background: var(--sunken); overflow: hidden; flex: none; display: grid; place-items: center; font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+.handoff .tn img { width: 100%; height: 100%; object-fit: cover; }
+.handoff b { font-family: var(--font-mono); font-weight: 500; font-size: 12px; color: var(--accent); }
+.handoff .grow { flex: 1 1 160px; min-width: 0; }
+
+/* library modal */
+.overlay { position: fixed; inset: 0; z-index: 50; background: var(--scrim); display: grid; place-items: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 16px) max(16px, env(safe-area-inset-left, 0px)); }
+.modal { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; width: min(820px, 100%); max-height: 100%; overflow: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+.modal-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.modal-head h3 { font-family: var(--font-display); font-weight: 400; font-size: 21px; margin: 0; }
+.lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+.card { border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; display: flex; flex-direction: column; background: var(--bg); }
+.card.current { border-color: var(--accent); }
+.card .ph { height: 150px; background: var(--sunken); display: grid; place-items: center; }
+.card .ph img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.card .body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.card .nm { font-weight: 600; overflow-wrap: anywhere; }
+.card .sz { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.card .row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; }
+.empty { border: 1.5px dashed var(--line); border-radius: var(--r); padding: 28px 20px; text-align: center; color: var(--muted); }
+.empty b { display: block; color: var(--ink); font-family: var(--font-display); font-weight: 400; font-size: 17px; margin-bottom: 4px; }
+
+.checks { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.checks ul { margin: 0; padding-left: 18px; font-size: 12.5px; display: flex; flex-direction: column; gap: 4px; }
+.seg button:disabled { opacity: .4; }
+
+/* presets */
+.preset-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.pchip { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); max-width: 100%; }
+.pchip button { border: 0; background: none; cursor: pointer; padding: 6px 4px 6px 12px; font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pchip button.del { padding: 6px 10px 6px 6px; color: var(--muted); font-weight: 400; }
+.pchip:hover { border-color: var(--muted); }
+.pchip.confirm { border-color: var(--warn); }
+.pchip.confirm button:first-child { color: var(--warn); }
+
+/* collapsible camera fine-tune */
+details.fine-tune { border-top: 1px solid var(--line); padding-top: 12px; }
+details.fine-tune > summary { cursor: pointer; font-weight: 600; font-size: 13px; list-style: none; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+details.fine-tune > summary::-webkit-details-marker { display: none; }
+details.fine-tune > summary::before { content: "▸"; color: var(--accent); display: inline-block; transition: transform .15s; }
+details.fine-tune[open] > summary::before { transform: rotate(90deg); }
+details.fine-tune .ft-body { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
+
+/* prompt history */
+.hist-panel > summary { cursor: pointer; list-style: none; }
+.hist-panel > summary::-webkit-details-marker { display: none; }
+.hist-panel > summary h3::before { content: "▸ "; color: var(--accent); }
+.hist-panel[open] > summary h3::before { content: "▾ "; }
+.hist { list-style: none; margin: 0; padding: 0 4px 0 0; display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; overscroll-behavior: contain; }
+.hist li { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.hist .hthumb { width: 44px; height: 44px; border-radius: 6px; background: var(--sunken); object-fit: cover; flex: none; }
+.hist .hmeta { flex: 1 1 140px; min-width: 0; display: flex; flex-direction: column; }
+.hist .hmeta b { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hist .hmeta span { font-family: var(--font-mono); font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <h1>Packshot Studio</h1>
+    <p>Соберите параметры рекламного кадра и получите готовый промт для Nano Banana.</p>
+  </div>
+  <div class="account" id="account"><span class="dot"></span><span><small>Проверяем вход…</small></span></div>
+</header>
+
+<main>
+  <div class="steps">
+
+    <section class="step" id="stepPresets">
+      <div class="step-head"><h2>Пресеты</h2><span class="note" id="presetWhere"></span></div>
+      <p class="hint" id="presetEmpty">Сохраните текущие настройки кадра под именем, например «Наш студийный стандарт», и применяйте их одной кнопкой. Фото бутылки и референсы в пресет не входят.</p>
+      <div class="preset-row" id="presetRow"></div>
+      <div class="save-row" id="presetForm" hidden>
+        <input type="text" id="presetName" placeholder="Название пресета" aria-label="Название пресета">
+        <button class="btn small primary" id="presetSave">Сохранить</button>
+        <button class="btn small" id="presetCancel">Отмена</button>
+      </div>
+    </section>
+
+    <section class="step" id="s-upload">
+      <div class="step-head"><span class="step-no">01</span><h2>Бутылка</h2></div>
+      <p class="hint">Фронтальный снимок на ровном фоне, этикетка в фокусе. Лучше от 2000 px по длинной стороне.</p>
+      <div class="upload-grid">
+        <div class="upload-col">
+          <label class="drop" id="bottleDrop">
+            <input type="file" id="bottleInput" accept="image/png,image/jpeg,image/webp">
+            <div class="thumb" id="bottleThumb"><img alt=""><button type="button" class="xbtn" id="clearBottle" aria-label="Убрать фото бутылки" hidden>×</button></div>
+            <div class="txt"><b id="bottleName">Пример: условная бутылка</b><span id="bottleSub"></span></div>
+          </label>
+          <div class="status" id="bottleStatus" hidden></div>
+          <div class="lib-actions">
+            <button class="btn small" id="openLib">Выбрать из библиотеки</button>
+            <button class="btn small" id="saveLibBtn">Сохранить в библиотеку</button>
+          </div>
+          <div class="save-row" id="saveRow" hidden>
+            <input type="text" id="saveName" placeholder="Название, например «Gin 0,7 л»" aria-label="Название бутылки">
+            <button class="btn small primary" id="saveConfirm">Сохранить</button>
+            <button class="btn small" id="saveCancel">Отмена</button>
+          </div>
+          <p class="note" id="libNote" hidden></p>
+        </div>
+
+        <div class="dims" aria-labelledby="dimsTitle">
+          <span class="label" id="dimsTitle">Реальные размеры</span>
+          <div class="dims-row">
+            <label class="num"><span class="note">Высота</span><span class="num-wrap"><input type="number" id="dimH" min="20" max="2000" step="1" inputmode="numeric" placeholder="300"><em>мм</em></span></label>
+            <label class="num"><span class="note">Диаметр донышка</span><span class="num-wrap"><input type="number" id="dimD" min="10" max="600" step="1" inputmode="numeric" placeholder="80"><em>мм</em></span></label>
+          </div>
+          <span class="ratio" id="ratio"></span>
+          <label class="check"><input type="checkbox" id="remember"><span>Запомнить размер<small>При повторной загрузке этого же фото размеры подставятся сами</small></span></label>
+          <span class="mem" id="memNote" hidden></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="step">
+      <div class="step-head"><span class="step-no">02</span><h2>Формат кадра</h2></div>
+      <div class="field">
+        <span class="label">Соотношение сторон</span>
+        <div class="seg" data-key="format">
+          <button data-v="1:1">1:1<small>пост</small></button>
+          <button data-v="4:5">4:5<small>лента</small></button>
+          <button data-v="3:4">3:4<small>верт.</small></button>
+          <button data-v="2:3">2:3<small>постер</small></button>
+          <button data-v="9:16">9:16<small>сторис</small></button>
+          <button data-v="3:2">3:2<small>фото</small></button>
+          <button data-v="16:9">16:9<small>баннер</small></button>
+          <button data-v="21:9">21:9<small>широкий</small></button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="label">Разрешение</span>
+        <div class="seg" data-key="res"><button data-v="1K">1K</button><button data-v="2K">2K</button><button data-v="4K">4K</button></div>
+      </div>
+    </section>
+
+    <section class="step" id="stepComp">
+      <div class="step-head"><span class="step-no">03</span><h2>Композиция</h2><span class="from-ref" hidden>из референса</span></div>
+      <div class="lockable" style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="field">
+            <span class="label">Положение бутылки</span>
+            <div class="lockable" id="posLock">
+              <div class="seg" data-key="pos">
+                <button data-v="left">Слева<small>левая треть</small></button>
+                <button data-v="center">По центру</button>
+                <button data-v="right">Справа<small>правая треть</small></button>
+              </div>
+            </div>
+            <p class="fine" id="posNote" hidden>В узком вертикальном формате бутылка всегда стоит по центру, сдвиг влево или вправо не нужен.</p>
+          </div>
+          <div class="field">
+            <span class="label">Размер в кадре</span>
+            <div class="seg" data-key="size">
+              <button data-v="small">Мелко<small>~40%</small></button>
+              <button data-v="medium">Средне<small>~60%</small></button>
+              <button data-v="large">Крупно<small>~80%</small></button>
+            </div>
+            <p class="fine" id="cropNote" hidden></p>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" id="copySpace"><span>Оставить место под текст<small>Чистая зона на противоположной от бутылки стороне</small></span></label>
+      </div>
+    </section>
+
+    <section class="step" id="stepCam">
+      <div class="step-head"><span class="step-no">04</span><h2>Камера</h2><span class="from-ref" hidden>из референса</span></div>
+      <div class="lockable" id="camAll" style="display:flex;flex-direction:column;gap:14px">
+        <div class="field">
+          <span class="label">Ракурс</span>
+          <div class="seg" data-key="angle">
+            <button data-v="eye">На уровне глаз</button>
+            <button data-v="low">Чуть снизу<small>~10°</small></button>
+            <button data-v="hero">Героический<small>от уровня поверхности, вертикали параллельны</small></button>
+            <button data-v="verylow">Низкий ракурс</button>
+            <button data-v="high">Чуть сверху<small>~25°</small></button>
+            <button data-v="steep">Высоко сверху<small>~60°: пробка и этикетка</small></button>
+            <button data-v="topstand">Сверху на стоящую<small>90°: видна пробка</small></button>
+            <button data-v="flatlay">Флэтлей<small>90°: бутылка лежит</small></button>
+          </div>
+        </div>
+        <details class="fine-tune" id="fineCam"><summary>Объектив и глубина резкости <span class="meta" id="camSum"></span></summary><div class="ft-body">
+        <div class="lockable" id="lensRow">
+          <div class="row2">
+            <div class="field">
+              <span class="label">Объектив <span class="from-ref" id="lensRef" hidden>из референса</span></span>
+              <div class="seg" data-key="lens">
+                <button data-v="35">35 мм<small>с окружением</small></button>
+                <button data-v="50">50 мм</button>
+                <button data-v="85">85 мм<small>предметка</small></button>
+                <button data-v="100">100 мм макро</button>
+                <button data-v="135">135 мм<small>сжатие</small></button>
+              </div>
+            </div>
+            <div class="field">
+              <span class="label">Глубина резкости</span>
+              <div class="seg" data-key="dof">
+                <button data-v="shallow">Малая<small>f/2</small></button>
+                <button data-v="medium">Средняя<small>f/5.6</small></button>
+                <button data-v="deep">Всё резко<small>f/11</small></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" id="dutch"><span>Голландский угол<small>Лёгкий завал горизонта для динамики</small></span></label>
+        </div></details>
+      </div>
+    </section>
+
+    <section class="step" id="stepRot">
+      <div class="step-head"><span class="step-no">05</span><h2>Поворот бутылки</h2><span class="from-ref" hidden>из референса</span></div>
+      <div class="lockable">
+        <div id="rotLock" class="lockable">
+        <div class="seg rot-grid" data-key="rot" id="rotGrid">
+          <button data-v="front"><span>Фронтально</span></button>
+          <button data-v="q-left"><span>3/4 влево</span></button>
+          <button data-v="q-right"><span>3/4 вправо</span></button>
+          <button data-v="p-left"><span>Профиль влево</span></button>
+          <button data-v="p-right"><span>Профиль вправо</span></button>
+          <button data-v="tilt"><span>С наклоном</span></button>
+          <button data-v="lying"><span>Лежит на боку</span></button>
+        </div>
+        </div>
+      </div>
+      <p class="hint" id="rotHint" hidden>При повороте часть этикетки уйдёт из вида. Промт попросит не дорисовывать скрытую сторону.</p>
+    </section>
+
+    <section class="step">
+      <div class="step-head"><span class="step-no">06</span><h2>Сюжет</h2></div>
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tab-studio" data-scene="studio">Студийная съёмка</button>
+        <button role="tab" id="tab-custom" data-scene="custom">Своя сцена</button>
+      </div>
+
+      <div id="sceneStudio" class="row2">
+        <div class="field">
+          <span class="label">Цвет фона</span>
+          <div class="swatches" id="swatches"></div>
+          <div class="swatches"><input type="color" id="bgColor" aria-label="Свой цвет фона"><span class="hex" id="bgHex"></span></div>
+        </div>
+        <div class="field">
+          <span class="label">Поверхность</span>
+          <div class="seg" data-key="surface">
+            <button data-v="matte">Матовая</button>
+            <button data-v="gloss">Глянец с отражением</button>
+            <button data-v="wood">Дерево</button>
+            <button data-v="stone">Камень</button>
+          </div>
+          <span class="label" style="margin-top:6px">Тени</span>
+          <div class="seg" data-key="shadow">
+            <button data-v="soft">Мягкие нейтральные</button>
+            <button data-v="hard">Жёсткие графичные</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="sceneCustom" class="field" hidden>
+        <span class="label">Быстрый старт</span>
+        <div class="chips" id="scenePresets"></div>
+        <label class="label" for="sceneText" style="margin-top:6px">Описание сцены</label>
+        <textarea id="sceneText" placeholder="Например: тёмный бар из дерева и латуни, вечер, на стойке тёплые отражения ламп"></textarea>
+        <p class="note">В кадре появятся только те предметы, которые вы здесь назовёте или выберете в «Реквизите». Можно писать по-русски, на английском обычно точнее.</p>
+        <span class="label" style="margin-top:6px">Референсы сцены</span>
+        <label class="drop" id="refDrop">
+          <input type="file" id="refInput" accept="image/*" multiple>
+          <div class="txt"><b>Добавить референсы</b><span>Нажмите, перетащите или наведите сюда и нажмите <kbd>Ctrl</kbd>+<kbd>V</kbd>. До 8 изображений.</span></div>
+        </label>
+        <div class="refs" id="refList"></div>
+        <div id="refUseBox" class="field" hidden>
+          <span class="label" style="margin-top:6px">Что взять из референсов</span>
+          <div class="chips lockable" data-multi="refUse" id="refUseChips">
+            <button data-v="light">Свет</button>
+            <button data-v="env">Окружение</button>
+            <button data-v="lens">Объектив камеры</button>
+            <button data-v="style">Стиль</button>
+            <button data-v="props">Реквизит</button>
+          </div>
+          <label class="check exact" id="exactBox"><input type="checkbox" id="exact"><span>Точное копирование сцены<small>Сцена повторяется один в один, вместо товара с референса появляется ваша бутылка в том же положении и повороте. Композиция, поворот, камера, свет и реквизит берутся из референса. Свой бокал можно добавить в «Реквизите».</small></span></label>
+          <label class="check" id="glassSwapBox" hidden><input type="checkbox" id="glassSwap"><span>Заменить бокал с референса на мой<small>Все бокалы с референса, даже если их несколько, заменяются на ваш бокал из «Реквизита», каждый на своём месте. Если на референсе бокалов нет, ваш бокал всё равно появится рядом с бутылкой.</small></span></label>
+        </div>
+      </div>
+    </section>
+
+    <section class="step" id="stepLight">
+      <div class="step-head"><span class="step-no">07</span><h2>Свет</h2><span class="from-ref" hidden>из референса</span></div>
+      <div class="lockable" style="display:flex;flex-direction:column;gap:14px">
+        <div class="seg" data-key="light">
+          <button data-v="softbox">Мягкий студийный<small>софтбоксы</small></button>
+          <button data-v="lowkey">Драматичный low-key</button>
+          <button data-v="rim">Контурный<small>rim light</small></button>
+          <button data-v="window">Дневной из окна</button>
+          <button data-v="golden">Золотой час</button>
+          <button data-v="warm">Тёплый вечерний<small>интерьер</small></button>
+        </div>
+        <label class="check"><input type="checkbox" id="glow"><span>Подсветить жидкость сзади<small>Свет проходит сквозь стекло и напиток</small></span></label>
+      </div>
+    </section>
+
+    <section class="step" id="stepProps">
+      <div class="step-head"><span class="step-no">08</span><h2>Реквизит</h2><span class="from-ref" hidden>из референса</span></div>
+      <p class="hint" id="propsHint">Необязательно. Без выбора в кадре не будет посторонних предметов.</p>
+      <div class="chips" data-multi="props">
+        <button data-v="glass">Бокал с напитком</button>
+        <button data-v="ice">Кубики льда</button>
+        <button data-v="splash">Всплеск</button>
+        <button data-v="smoke">Лёгкий дым</button>
+        <button data-v="drops">Капли на стекле</button>
+        <button data-v="citrus">Цитрус</button>
+        <button data-v="botanicals">Травы и ботаника</button>
+        <button data-v="barrel">Дубовая бочка</button>
+        <button data-v="grain">Злаки</button>
+        <button data-v="box">Подарочная коробка</button>
+      </div>
+      <div class="field" id="glassBox" hidden>
+        <span class="label">Бокал</span>
+        <div class="upload-grid">
+          <div class="upload-col">
+            <label class="drop" id="glassDrop">
+              <input type="file" id="glassInput" accept="image/png,image/jpeg,image/webp">
+              <div class="thumb" id="glassThumb"><img alt="" hidden><button type="button" class="xbtn" id="clearGlass" aria-label="Убрать фото бокала" hidden>×</button></div>
+              <div class="txt"><b id="glassName">Фото бокала (необязательно)</b><span>Нажмите, перетащите или наведите сюда и нажмите <kbd>Ctrl</kbd>+<kbd>V</kbd>. Без фото модель подберёт бокал сама.</span></div>
+            </label>
+          </div>
+          <div class="dims">
+            <span class="label">Размеры бокала</span>
+            <div class="dims-row">
+              <label class="num"><span class="note">Высота</span><span class="num-wrap"><input type="number" id="glassH" min="20" max="400" step="1" inputmode="numeric" placeholder="95"><em>мм</em></span></label>
+              <label class="num"><span class="note">Диаметр края</span><span class="num-wrap"><input type="number" id="glassD" min="20" max="300" step="1" inputmode="numeric" placeholder="80"><em>мм</em></span></label>
+            </div>
+            <p class="fine">Бокал всегда стоит вертикально на донышке, даже если бутылка лежит или наклонена.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="step">
+      <div class="step-head"><span class="step-no">09</span><h2>Ограничения</h2></div>
+      <label class="check"><input type="checkbox" id="c-people"><span>Без людей в кадре</span></label>
+      <label class="check"><input type="checkbox" id="c-hands"><span>Без рук</span></label>
+      <label class="check"><input type="checkbox" id="c-drink"><span>Без процесса употребления<small>Никто не пьёт и не наливает</small></span></label>
+      <label class="check"><input type="checkbox" id="c-text"><span>Без добавленного текста и логотипов<small>Вне этикетки в кадре нет надписей</small></span></label>
+      <label class="check"><input type="checkbox" id="c-single"><span>Только одна бутылка<small>Без копий и других брендов</small></span></label>
+    </section>
+  </div>
+
+  <aside class="side">
+    <div class="panel">
+      <div class="panel-head"><h3>Кадр</h3><span class="meta" id="frameMeta"></span></div>
+      <div class="stage" id="stage"><div class="frame" id="frame">
+        <canvas id="view3d" aria-label="3D-превью кадра"></canvas>
+        <div class="bg" id="frameBg" hidden></div>
+        <img class="bottle" id="pvBottle" alt="" hidden>
+        <div class="copy" id="copyBox">место<br>под текст</div>
+        <div class="thirds"></div>
+        <div class="veil" id="veil" hidden>Композиция, ракурс и свет<br>повторяют референс</div>
+      </div></div>
+      <p class="note" id="viewNote">Серая модель с пропорциями вашей бутылки: ракурс, камера, объектив и композиция.</p>
+      <label class="check"><input type="checkbox" id="scheme"><span>Приложить 3D-схему ракурса<small>Необязательно. Схема загружается в Nano Banana второй картинкой: модель берёт из неё только положение бутылки и камеры, без цветов и материалов. Особенно помогает с необычными ракурсами, например видом сверху.</small></span></label>
+      <div class="actions" id="schemeActions" hidden><button class="btn small" data-scheme="copy">Копировать схему</button><button class="btn small" data-scheme="dl">Скачать PNG</button></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Промт</h3><span class="meta" id="promptMeta"></span></div>
+      <pre class="prompt" id="prompt"></pre>
+      <div class="actions">
+        <button class="btn primary" id="copyBtn">Скопировать промт</button>
+        <button class="btn" id="resetBtn">Сбросить настройки</button>
+        <span class="toast" id="toast" role="status"></span>
+      </div>
+      <div class="checks" id="checks" hidden><span class="label">Учтено автоматически</span><ul id="checksList"></ul></div>
+      <p class="note">* По умолчанию промт просит модель сохранить форму, пропорции и этикетку бутылки точно как на фото.</p>
+    </div>
+
+    <details class="panel hist-panel">
+      <summary class="panel-head"><h3>История промтов</h3><span class="meta" id="histMeta"></span></summary>
+      <ul class="hist" id="histList"></ul>
+    </details>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Загрузите в Nano Banana</h3></div>
+      <ul class="handoff" id="handoff"></ul>
+    </div>
+  </aside>
+</main>
+
+<div class="overlay" id="libOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="libTitle">
+    <div class="modal-head"><h3 id="libTitle">Библиотека бутылок</h3><button class="btn small" id="closeLib">Закрыть</button></div>
+    <div id="libBody"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  const DEFAULTS = {
+    format: "4:5", res: "2K", pos: "center", size: "medium", crop: false, copySpace: false,
+    rot: "front", angle: "eye", lens: "85", dof: "medium", dutch: false,
+    scene: "studio", bg: "#D9D4CB", surface: "matte", shadow: "soft",
+    sceneText: "", refUse: ["light", "env", "style"], exact: false,
+    light: "softbox", glow: true, props: [], remember: true, scheme: false, glassH: "", glassD: "", glassSwap: true,
+    c: { people: true, hands: true, drink: true, text: true, single: true }
+  };
+  const KEY = "packshot-studio-v1", SIZES_KEY = "packshot-sizes-v1";
+  let S;
+  try { S = Object.assign(structuredClone(DEFAULTS), JSON.parse(localStorage.getItem(KEY) || "{}")); }
+  catch (e) { S = structuredClone(DEFAULTS); }
+  S.c = Object.assign({}, DEFAULTS.c, S.c || {});
+  if (!Array.isArray(S.refUse)) S.refUse = DEFAULTS.refUse.slice();
+  if (S.angle === "top") S.angle = "topstand";
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+
+  // current bottle: { src, name, w, h, hash, file?, libId?, assetId?, thumb?, ext? }
+  let bottle = null;
+  let meta = { h: "", d: "" };
+  let memSource = "";
+  let refs = [];
+  let glassImg = null;   // { src, name, w, h }
+
+  let db = null, user = null, assets = null, downloads = null, uid = null;
+  let bottlesCol = null, sizesDoc = null;
+  let library = [], sizeMap = {}, signedIn = null;
+  // without a claude.ai account (own hosting, or signed out) the library lives in this browser's IndexedDB
+  let localLib = false;
+  const localBlobs = new Map();
+  const libReady = () => signedIn || localLib;
+  const idb = (() => {
+    let dbp;
+    const open = () => dbp || (dbp = new Promise((res, rej) => {
+      const r = indexedDB.open("packshot-studio", 1);
+      r.onupgradeneeded = () => r.result.createObjectStore("bottles", { keyPath: "id" });
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    }));
+    const run = async (mode, fn) => {
+      const d = await open();
+      return new Promise((res, rej) => {
+        const t = d.transaction("bottles", mode), req = fn(t.objectStore("bottles"));
+        t.oncomplete = () => res(req && req.result); t.onerror = () => rej(t.error);
+      });
+    };
+    return { all: () => run("readonly", st => st.getAll()), get: id => run("readonly", st => st.get(id)), put: v => run("readwrite", st => st.put(v)), del: id => run("readwrite", st => st.delete(id)) };
+  })();
+  async function loadLocalLib() {
+    const rows = (await idb.all()) || [];
+    localBlobs.clear();
+    library = rows.sort((a, b) => b.createdAt - a.createdAt).map(({ blob, ...r }) => { if (blob) localBlobs.set(r.id, blob); return r; });
+    renderAccount(); renderLibrary(); render(false);
+  }
+  // offer a file to the viewer: the claude.ai save dialog where it exists, a normal browser download elsewhere
+  async function saveFile(filename, blob) {
+    if (downloads) return downloads.save({ filename, data: blob });
+    const a = document.createElement("a"), url = URL.createObjectURL(blob);
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+    setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 4000);
+  }
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+  const PLACEHOLDER = "data:image/svg+xml;utf8," + encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 360"><defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#6b3a0e"/><stop offset=".45" stop-color="#c47d24"/><stop offset=".6" stop-color="#e3a54f"/><stop offset="1" stop-color="#5a2f0b"/></linearGradient></defs><rect x="46" y="4" width="28" height="34" rx="4" fill="#2a2018"/><path d="M50 38h20v40c0 14 34 22 34 50v214a14 14 0 0 1-14 14H30a14 14 0 0 1-14-14V128c0-28 34-36 34-50z" fill="url(#g)"/><rect x="24" y="170" width="72" height="104" rx="3" fill="#efe7d6"/><rect x="34" y="188" width="52" height="6" fill="#2a2018"/><rect x="40" y="202" width="40" height="3" fill="#8a6a3d"/><rect x="30" y="228" width="60" height="18" fill="#2a2018"/><rect x="40" y="256" width="40" height="3" fill="#8a6a3d"/></svg>`);
+
+  // ---------- derived rules ----------
+  const refsActive = () => S.scene === "custom" && refs.length > 0;
+  const exactOn = () => refsActive() && S.exact;
+  const fromRef = k => refsActive() && !S.exact && S.refUse.includes(k);
+  // crop by the frame edge: only for the large size, and not when the camera looks down at the bottle
+  const NO_CROP_ANGLES = ["high", "steep", "topstand"];
+  const cropFor = (size, angle) => size === "large" && !NO_CROP_ANGLES.includes(angle);
+  const refsUsed = () => refsActive() && (S.exact || S.refUse.length > 0);
+  const topMode = a => a === "topstand" || a === "flatlay";
+  const isNarrow = () => { const [a, b] = S.format.split(":").map(Number); return a / b < 0.7; };
+  const hexL = hex => { const n = parseInt(hex.slice(1), 16), r = n >> 16 & 255, g = n >> 8 & 255, b = n & 255; return (Math.max(r, g, b) + Math.min(r, g, b)) / 510; };
+  const schemeOn = () => S.scheme && !exactOn() && !!V3;
+  const glassImgOn = () => !!glassImg && S.props.includes("glass");
+  const glassIdx = () => schemeOn() ? 3 : 2;
+  const refStart = () => 2 + (schemeOn() ? 1 : 0) + (glassImgOn() ? 1 : 0);
+
+  // Effective settings: what actually goes into the prompt after removing impossible combinations
+  function eff() {
+    const E = structuredClone(S), notes = [];
+    E.crop = cropFor(E.size, E.angle);
+    if (S.scene === "custom" && S.exact && !refs.length) notes.push("Для точного копирования сцены добавьте хотя бы один референс.");
+    if (S.props.includes("glass") && !S.glassSwap && (exactOn() || fromRef("props"))) notes.push("В кадре может оказаться два бокала: с референса и ваш. Включите «Заменить бокал с референса на мой».");
+    if (exactOn()) {
+      if (S.scheme) notes.push("3D-схема не прикладывается: при точном копировании ракурс берётся из референса.");
+      E.notes = notes; return E;
+    }
+    if (isNarrow() && E.pos !== "center") { E.pos = "center"; notes.push("Положение слева или справа не учитывается: в узком вертикальном формате бутылка стоит по центру."); }
+    if ((E.angle === "steep" || E.angle === "topstand") && +E.lens >= 85 && !fromRef("lens")) {
+      E.lens = "50";
+      notes.push(`Объектив заменён на 50 мм: у длинного объектива почти нет перспективы, и модель скатывается во фронтальный вид. Вернётся ${S.lens} мм, если сменить ракурс.`);
+    }
+    if (E.angle === "topstand") {
+      if (E.rot !== "front") notes.push("Поворот не учитывается: при виде строго сверху его не видно.");
+      E.rot = "front";
+    }
+    if (E.angle === "flatlay" && E.rot === "lying") { E.rot = "front"; notes.push("Во флэтлее бутылка и так лежит, поэтому «Лежит на боку» считается фронтальным положением."); }
+    if (topMode(E.angle)) {
+      if (S.dutch) notes.push("Голландский угол отключён: при виде сверху он не работает.");
+      E.dutch = false;
+      if (S.glow && !fromRef("light")) notes.push("Подсветка жидкости сзади отключена: при виде сверху её не видно.");
+      E.glow = false;
+      if (E.scene === "studio" && (E.surface === "wood" || E.surface === "stone")) notes.push("Цвет фона не используется: при виде сверху в кадре только поверхность.");
+    }
+    if (E.scene === "studio" && E.light === "lowkey" && hexL(E.bg) > 0.75) notes.push("Low-key свет на светлом фоне: фон получится серым. Для контраста выберите тёмный фон.");
+    if (refs.length && S.scene === "custom" && !S.exact && !S.refUse.length) notes.push("Референсы загружены, но не выбрано, что из них брать. В промт они не попадут.");
+    if (refs.length && S.scene !== "custom") notes.push("Референсы сцены используются только во вкладке «Своя сцена».");
+    E.notes = notes; return E;
+  }
+
+  // ---------- controls ----------
+  document.querySelectorAll(".seg[data-key]").forEach(seg => {
+    seg.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S[seg.dataset.key] = b.dataset.v; render(); });
+  });
+  document.querySelectorAll(".chips[data-multi]").forEach(group => {
+    const k = group.dataset.multi;
+    group.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      const v = b.dataset.v; S[k] = S[k].includes(v) ? S[k].filter(x => x !== v) : [...S[k], v]; render();
+    });
+  });
+  const bindCheck = (id, get, set) => { const el = $(id); el.addEventListener("change", () => { set(el.checked); render(); }); return () => el.checked = get(); };
+  const checks = [
+    bindCheck("copySpace", () => S.copySpace, v => S.copySpace = v),
+    bindCheck("dutch", () => S.dutch, v => S.dutch = v),
+    bindCheck("glow", () => S.glow, v => S.glow = v),
+    bindCheck("exact", () => S.exact, v => S.exact = v),
+    bindCheck("scheme", () => S.scheme, v => S.scheme = v),
+    bindCheck("glassSwap", () => S.glassSwap, v => S.glassSwap = v),
+    bindCheck("remember", () => S.remember, v => { S.remember = v; if (v) queueRemember(); }),
+    ...["people", "hands", "drink", "text", "single"].map(k => bindCheck("c-" + k, () => S.c[k], v => S.c[k] = v))
+  ];
+  document.querySelectorAll(".tabs button").forEach(t => t.addEventListener("click", () => { S.scene = t.dataset.scene; render(); }));
+
+  const SWATCHES = [["#FFFFFF","белый"],["#D9D4CB","тёплый серый"],["#9AA0A6","холодный серый"],["#2B2724","графит"],["#111111","чёрный"],["#5B1F1A","бордо"],["#1F3A33","бутылочный зелёный"],["#1E2A44","тёмно-синий"],["#C9A27A","карамель"]];
+  $("swatches").innerHTML = SWATCHES.map(([c, n]) => `<button class="sw" style="background:${c}" data-c="${c}" title="${n}" aria-label="${n}"></button>`).join("");
+  $("swatches").addEventListener("click", e => { const b = e.target.closest(".sw"); if (b) { S.bg = b.dataset.c; render(); } });
+  $("bgColor").addEventListener("input", e => { S.bg = e.target.value.toUpperCase(); render(); });
+
+  const PRESETS = [
+    ["Мавзолей", "Red Square in Moscow at blue hour. The bottle stands on the polished red and black granite parapet in front of Lenin's Mausoleum; the stepped granite mausoleum fills the softly blurred background, with the Kremlin wall and the Senate Tower behind it. Cold blue evening sky, warm architectural floodlights on the granite, wet stone reflections."],
+    ["Бар", "Upscale cocktail bar at night: dark walnut wood counter, brass details, warm pendant lights reflecting on the counter, softly blurred back bar shelves in the background."],
+    ["Кабинет у камина", "Classic study room: leather armchair and bookshelves softly out of focus, warm fireplace glow from the side, the bottle on a dark oak side table."],
+    ["Скалы и туман", "Rugged highland landscape: the bottle on a mossy wet rock, misty hills and moody overcast sky in the background, cool natural light."],
+    ["Погреб с бочками", "Old cellar with stacked oak casks, dusty light beams through a small window, the bottle standing on top of a cask."],
+    ["Праздничный стол", "Elegant festive dinner table at evening: candles, crystal glassware, subtle bokeh of warm string lights, deep green and gold accents."],
+    ["Подиум и тень", "Minimal art-direction set: sculptural plaster podium, dramatic window-blind shadow pattern across a pastel wall, clean modern still life."]
+  ];
+  $("scenePresets").innerHTML = PRESETS.map(([n], i) => `<button data-i="${i}">${n}</button>`).join("");
+  $("scenePresets").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S.sceneText = PRESETS[+b.dataset.i][1]; $("sceneText").value = S.sceneText; render(); });
+  $("sceneText").addEventListener("input", e => { S.sceneText = e.target.value; render(false); });
+
+  $("resetBtn").addEventListener("click", () => { S = structuredClone(DEFAULTS); $("sceneText").value = ""; render(); toast("Настройки сброшены"); });
+
+  const syncMetaInputs = () => { $("dimH").value = meta.h; $("dimD").value = meta.d; };
+  ["dimH", "dimD"].forEach(id => $(id).addEventListener("input", () => {
+    meta = { h: $("dimH").value.trim(), d: $("dimD").value.trim() };
+    memSource = ""; queueRemember(); render(false);
+  }));
+
+  // ---------- uploads & clipboard ----------
+  const readFile = file => new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => { const im = new Image(); im.onload = () => res({ src: fr.result, name: file.name, w: im.naturalWidth, h: im.naturalHeight }); im.onerror = rej; im.src = fr.result; };
+    fr.onerror = rej; fr.readAsDataURL(file);
+  });
+  async function hashFile(file) {
+    try {
+      const buf = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+      return [...new Uint8Array(buf)].slice(0, 16).map(b => b.toString(16).padStart(2, "0")).join("");
+    } catch (e) { return null; }
+  }
+  const altKey = b => `n:${b.name}|${b.w}x${b.h}`;
+  const setupDrop = drop => {
+    ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, () => drop.classList.add("over")));
+    ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, () => drop.classList.remove("over")));
+  };
+  setupDrop($("bottleDrop")); setupDrop($("refDrop"));
+
+  async function setBottleFile(f) {
+    let img;
+    try { img = await readFile(f); } catch (err) { showStatus("warn", "Не получилось открыть файл. Загрузите JPG, PNG или WebP."); return; }
+    bottle = { ...img, file: f, hash: await hashFile(f) };
+    const long = Math.max(bottle.w, bottle.h);
+    if (long < 1200) showStatus("warn", `${bottle.w}×${bottle.h} px: маловато. Мелкий текст этикетки может исказиться, лучше от 2000 px.`);
+    else if (long < 2000) showStatus("ok", `${bottle.w}×${bottle.h} px: подойдёт. Для мелкого текста лучше от 2000 px.`);
+    else showStatus("ok", `${bottle.w}×${bottle.h} px: отличное качество.`);
+    const hit = lookupSize(bottle);
+    if (hit) {
+      meta = { h: String(hit.h || ""), d: String(hit.d || "") };
+      if (hit.libId) { bottle.libId = hit.libId; bottle.assetId = hit.assetId || null; }
+      memSource = hit.libId ? `Размеры подставлены из библиотеки: «${hit.name}»` : "Размеры подставлены из памяти";
+    } else { meta = { h: "", d: "" }; memSource = ""; }
+    syncMetaInputs(); $("saveRow").hidden = true; render();
+  }
+  async function addRefFiles(files) {
+    const room = 8 - refs.length;
+    if (room <= 0) { toast("Уже 8 референсов. Уберите лишние, чтобы добавить новые"); return; }
+    for (const f of files.slice(0, room)) { try { refs.push(await readFile(f)); } catch (err) {} }
+    render();
+  }
+  $("bottleInput").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) setBottleFile(f); });
+  $("refInput").addEventListener("change", e => { const fs = [...e.target.files]; e.target.value = ""; addRefFiles(fs); });
+  $("refList").addEventListener("click", e => { const b = e.target.closest("button[data-i]"); if (b) { refs.splice(+b.dataset.i, 1); render(); } });
+  $("clearBottle").addEventListener("click", e => {
+    e.preventDefault(); e.stopPropagation();
+    bottle = null; meta = { h: "", d: "" }; memSource = "";
+    $("bottleStatus").hidden = true; $("saveRow").hidden = true; syncMetaInputs(); render();
+  });
+
+  // Ctrl+V goes to the zone under the pointer / in focus; bottle by default
+  let pasteTarget = "bottle";
+  async function setGlassFile(f) {
+    try { glassImg = await readFile(f); } catch (err) { toast("Не получилось открыть фото бокала"); return; }
+    render();
+  }
+  $("glassInput").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) setGlassFile(f); });
+  $("clearGlass").addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); glassImg = null; render(); });
+  ["glassH", "glassD"].forEach(id => $(id).addEventListener("input", () => { S[id] = $(id).value.trim(); render(false); }));
+  setupDrop($("glassDrop"));
+  [["bottleDrop", "bottle"], ["refDrop", "refs"], ["glassDrop", "glass"]].forEach(([id, t]) => {
+    $(id).addEventListener("pointerenter", () => pasteTarget = t);
+    $(id).addEventListener("focusin", () => pasteTarget = t);
+  });
+  $("refList").addEventListener("pointerenter", () => pasteTarget = "refs");
+  document.addEventListener("paste", e => {
+    const items = [...((e.clipboardData && e.clipboardData.items) || [])].filter(i => i.kind === "file" && i.type.startsWith("image/"));
+    if (!items.length) return;
+    e.preventDefault();
+    const stamp = new Date().toTimeString().slice(0, 5).replace(":", "-");
+    const files = items.map((it, i) => {
+      const f = it.getAsFile(); const ext = (f.type.split("/")[1] || "png").replace("jpeg", "jpg");
+      return new File([f], `Из буфера ${stamp}${i ? "-" + i : ""}.${ext}`, { type: f.type });
+    });
+    if (pasteTarget === "refs" && S.scene === "custom") { addRefFiles(files); toast("Референс вставлен из буфера"); }
+    else if (pasteTarget === "glass" && S.props.includes("glass")) { setGlassFile(files[0]); toast("Фото бокала вставлено из буфера"); }
+    else { setBottleFile(files[0]); toast("Фото бутылки вставлено из буфера"); }
+  });
+  const showStatus = (cls, msg) => { const s = $("bottleStatus"); s.className = "status " + cls; s.textContent = msg; s.hidden = false; };
+
+  // ---------- size memory ----------
+  function localSizes() { try { return JSON.parse(localStorage.getItem(SIZES_KEY) || "{}"); } catch (e) { return {}; } }
+  function lookupSize(b) {
+    const lib = library.find(x => (b.hash && x.hash === b.hash) || (x.name0 === b.name && x.w === b.w && x.h === b.h));
+    if (lib) return { h: lib.heightMm, d: lib.baseMm, libId: lib.id, assetId: lib.assetId, name: lib.name };
+    for (const m of [sizeMap, localSizes()]) { const v = (b.hash && m[b.hash]) || m[altKey(b)]; if (v) return v; }
+    return null;
+  }
+  let remTimer, writeChain = Promise.resolve();
+  function queueRemember() { clearTimeout(remTimer); remTimer = setTimeout(remember, 700); }
+  function remember() {
+    if (!S.remember || !bottle || (!bottle.hash && !bottle.libId)) return;
+    if (!meta.h && !meta.d) return;
+    const entry = { h: +meta.h || null, d: +meta.d || null };
+    const keys = [bottle.hash, bottle.name && bottle.w ? altKey(bottle) : null].filter(Boolean);
+    if (db && uid) {
+      const next = { ...sizeMap }; keys.forEach(k => next[k] = entry);
+      writeChain = writeChain.then(() => sizesDoc.set({ map: next })).catch(() => {});
+      if (bottle.libId) writeChain = writeChain.then(() => bottlesCol.doc(bottle.libId).update({ heightMm: entry.h, baseMm: entry.d })).catch(() => {});
+    } else {
+      try { const m = localSizes(); keys.forEach(k => m[k] = entry); localStorage.setItem(SIZES_KEY, JSON.stringify(m)); } catch (e) {}
+      if (localLib && bottle.libId) {
+        const id = bottle.libId;
+        writeChain = writeChain.then(async () => { const r = await idb.get(id); if (r) { await idb.put({ ...r, heightMm: entry.h, baseMm: entry.d }); await loadLocalLib(); } }).catch(() => {});
+      }
+    }
+    memSource = "Размер запомнен"; renderMem();
+  }
+
+  // ---------- presets & history ----------
+  const PRESETS_KEY = "packshot-presets-v1", HIST_KEY = "packshot-history-v1";
+  let presets = [], history = [], presetsCol = null, histDoc = null, confirmPreset = null;
+  const HIST_MAX = 10;
+  const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || "null"); return v == null ? d : v; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  presets = lsGet(PRESETS_KEY, []); history = lsGet(HIST_KEY, []).slice(0, 10);
+
+  function applySettings(settings) {
+    const src = structuredClone(settings || {});
+    S = Object.assign(structuredClone(DEFAULTS), src);
+    S.c = Object.assign({}, DEFAULTS.c, src.c || {});
+    if (S.angle === "top") S.angle = "topstand";
+    render();
+  }
+
+  function renderPresets() {
+    const row = $("presetRow");
+    row.innerHTML = presets.map(p => confirmPreset === p.id
+      ? `<span class="pchip confirm"><button data-pdel="${esc(p.id)}">Удалить «<i></i>»?</button><button class="del" data-pno>Нет</button></span>`
+      : `<span class="pchip"><button data-papply="${esc(p.id)}"></button><button class="del" data-pask="${esc(p.id)}" aria-label="Удалить пресет">×</button></span>`).join("")
+      + `<button class="btn small" data-pnew>+ Сохранить текущие настройки</button>`;
+    presets.forEach((p, i) => {
+      const chip = row.children[i];
+      const el = chip.querySelector("[data-papply]") || chip.querySelector("i");
+      el.textContent = p.name;
+    });
+    $("presetEmpty").hidden = presets.length > 0;
+    $("presetWhere").textContent = signedIn ? "хранятся в вашем аккаунте" : signedIn === false ? "хранятся в этом браузере" : "";
+  }
+  $("presetRow").addEventListener("click", async e => {
+    const t = e.target.closest("button"); if (!t) return;
+    if ("pnew" in t.dataset) { $("presetForm").hidden = false; $("presetName").value = ""; $("presetName").focus(); }
+    else if (t.dataset.papply) { const p = presets.find(x => x.id === t.dataset.papply); if (p) { applySettings(p.settings); toast(`Пресет «${p.name}» применён`); } }
+    else if (t.dataset.pask) { confirmPreset = t.dataset.pask; renderPresets(); }
+    else if ("pno" in t.dataset) { confirmPreset = null; renderPresets(); }
+    else if (t.dataset.pdel) {
+      const id = t.dataset.pdel; confirmPreset = null;
+      if (signedIn) { try { await presetsCol.doc(id).delete(); } catch (err) { toast("Не удалось удалить пресет"); } }
+      else { presets = presets.filter(x => x.id !== id); lsSet(PRESETS_KEY, presets); }
+      renderPresets();
+    }
+  });
+  $("presetCancel").addEventListener("click", () => $("presetForm").hidden = true);
+  $("presetName").addEventListener("keydown", e => { if (e.key === "Enter") $("presetSave").click(); });
+  $("presetSave").addEventListener("click", async () => {
+    const name = $("presetName").value.trim() || "Без названия";
+    const item = { name, settings: structuredClone(S), createdAt: Date.now() };
+    try {
+      if (signedIn) await presetsCol.add(item);
+      else { presets = [...presets, { id: Date.now().toString(36), ...item }]; lsSet(PRESETS_KEY, presets); }
+      $("presetForm").hidden = true; renderPresets(); toast(`Пресет «${name}» сохранён`);
+    } catch (err) { toast("Не удалось сохранить пресет"); }
+  });
+
+  function snapThumb() {
+    try {
+      const cv = $("view3d"); if (!V3 || !cv.width) return null;
+      const c = document.createElement("canvas"), k = 96 / cv.height;
+      c.width = Math.round(cv.width * k); c.height = 96;
+      c.getContext("2d").drawImage(cv, 0, 0, c.width, c.height);
+      return c.toDataURL("image/jpeg", .6);
+    } catch (e) { return null; }
+  }
+  function pushHistory(text) {
+    if (history[0] && history[0].text === text) return;
+    const item = { id: Date.now().toString(36), ts: Date.now(), text, settings: structuredClone(S), bottle: bottle ? bottle.name : "", thumb: snapThumb() };
+    const next = [item, ...history].slice(0, HIST_MAX);
+    history = next; renderHistory();
+    if (signedIn) writeChain = writeChain.then(() => histDoc.set({ items: next })).catch(() => {});
+    else lsSet(HIST_KEY, next);
+  }
+  const fmtTime = ts => new Date(ts).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  function renderHistory() {
+    const list = history;
+    $("histMeta").textContent = `${history.length} из ${HIST_MAX}`;
+    $("histList").innerHTML = history.length
+      ? list.map(h => `<li><img class="hthumb" src="${esc(h.thumb || PLACEHOLDER)}" alt=""><span class="hmeta"><b></b><span>${esc(fmtTime(h.ts))} · ${esc((h.settings && h.settings.format) || "")}</span></span><button class="btn small" data-happly="${esc(h.id)}">Применить</button><button class="btn small" data-hcopy="${esc(h.id)}">Копировать</button></li>`).join("")
+      : `<li class="note">Здесь появятся промты, которые вы скопировали. Из истории можно вернуть и текст, и настройки.</li>`;
+    list.forEach((h, i) => { const b = $("histList").children[i].querySelector("b"); b.textContent = h.bottle || "Без фото бутылки"; });
+  }
+  $("histList").addEventListener("click", e => {
+    const t = e.target.closest("button"); if (!t) return;
+    const h = history.find(x => x.id === (t.dataset.happly || t.dataset.hcopy)); if (!h) return;
+    if (t.dataset.happly) { applySettings(h.settings); toast("Настройки из истории применены"); }
+    else { try { navigator.clipboard.writeText(h.text).then(() => toast("Промт из истории скопирован"), () => toast("Не удалось скопировать")); } catch (err) { toast("Не удалось скопировать"); } }
+  });
+
+  // ---------- account & library ----------
+  const use = n => (window.claude && window.claude.use) ? window.claude.use(n).catch(() => null) : Promise.resolve(null);
+  async function initCaps() {
+    [user, db, assets, downloads] = await Promise.all([use("user"), use("db"), use("assets"), use("downloads")]);
+    uid = user ? await user.id() : null;
+    signedIn = !!(db && uid);
+    if (signedIn) {
+      bottlesCol = db.doc("data/users/" + uid + "/profile").collection("bottles");
+      sizesDoc = db.doc("data/users/" + uid + "/sizes");
+      bottlesCol.orderBy("createdAt", "desc").onSnapshot(snap => {
+        library = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderAccount(); renderLibrary(); render(false);
+      }, () => { library = []; renderLibrary(); });
+      sizesDoc.onSnapshot(s => { sizeMap = s.exists ? { ...(s.data().map || {}) } : {}; }, () => {});
+      presetsCol = db.doc("data/users/" + uid + "/profile").collection("presets");
+      histDoc = db.doc("data/users/" + uid + "/history");
+      presetsCol.orderBy("createdAt", "asc").onSnapshot(snap => { presets = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderPresets(); }, () => {});
+      histDoc.onSnapshot(s => { history = s.exists ? (s.data().items || []).slice(0, HIST_MAX) : []; renderHistory(); }, () => {});
+    }
+    if (!signedIn && window.indexedDB) {
+      try { localLib = true; await loadLocalLib(); } catch (e) { localLib = false; }
+    }
+    renderAccount(); renderPresets(); renderHistory(); render(false);
+  }
+  async function renderAccount() {
+    const el = $("account");
+    if (signedIn === null) return;
+    if (!signedIn && localLib) {
+      el.innerHTML = `<span class="dot"></span><span><small>Хранится в этом браузере</small></span><button id="accLib">Библиотека · ${library.length}</button>`;
+      el.querySelector("#accLib").addEventListener("click", openLib);
+      return;
+    }
+    if (!signedIn) { el.innerHTML = `<span class="dot"></span><span><small>Библиотека недоступна в этом браузере</small></span>`; return; }
+    const me = await user.me();
+    el.innerHTML = `<img src="${esc(me.avatarUrl)}" alt=""><span></span><button id="accLib">Библиотека · ${library.length}</button>`;
+    el.querySelector("span").textContent = me.name || "Вы";
+    el.querySelector("#accLib").addEventListener("click", openLib);
+  }
+
+  function makeThumb(src) {
+    return new Promise(res => {
+      const im = new Image();
+      im.onload = () => {
+        const k = Math.min(1, 480 / Math.max(im.naturalWidth, im.naturalHeight));
+        const c = document.createElement("canvas");
+        c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+        c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+        let url = c.toDataURL("image/webp", .82);
+        if (!url.startsWith("data:image/webp")) url = c.toDataURL("image/png");
+        res(url);
+      };
+      im.onerror = () => res(null); im.src = src;
+    });
+  }
+
+  $("saveLibBtn").addEventListener("click", () => {
+    $("saveRow").hidden = false;
+    $("saveName").value = bottle ? bottle.name.replace(/\.[a-z0-9]+$/i, "") : "";
+    $("saveName").focus();
+  });
+  $("saveCancel").addEventListener("click", () => $("saveRow").hidden = true);
+  $("saveConfirm").addEventListener("click", async () => {
+    const name = $("saveName").value.trim() || "Без названия";
+    const btn = $("saveConfirm"); btn.disabled = true; btn.textContent = "Сохраняем…";
+    try {
+      const thumb = await makeThumb(bottle.src);
+      let assetId = null;
+      if (assets && bottle.file && /^image\/(png|jpeg|webp)$/.test(bottle.file.type)) {
+        try { assetId = (await assets.upload(bottle.file, { type: bottle.file.type })).id; } catch (e) { assetId = null; }
+      }
+      const rec = {
+        name, name0: bottle.name, hash: bottle.hash || null, w: bottle.w, h: bottle.h,
+        heightMm: +meta.h || null, baseMm: +meta.d || null,
+        thumb, assetId, ext: (bottle.file && bottle.file.type.split("/")[1].replace("jpeg", "jpg")) || "png",
+        createdAt: Date.now()
+      };
+      if (signedIn) {
+        const ref = bottlesCol.doc();
+        await ref.set(rec);
+        bottle.libId = ref.id; bottle.assetId = assetId;
+      } else {
+        const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        await idb.put({ id, ...rec, blob: bottle.file || null });
+        bottle.libId = id; bottle.localBlob = bottle.file || null;
+        await loadLocalLib();
+      }
+      $("saveRow").hidden = true;
+      toast(assetId || !signedIn ? "Бутылка сохранена в библиотеку" : "Сохранено: размеры и превью. Оригинал храните у себя");
+    } catch (e) {
+      showStatus("warn", e && e.code === "quota_exceeded" ? "Библиотека переполнена. Удалите ненужные бутылки и попробуйте снова." : (signedIn ? "Не удалось сохранить. Проверьте, что вы вошли в claude.ai, и попробуйте ещё раз." : "Не удалось сохранить: браузер не дал место для библиотеки. Освободите место или выйдите из режима инкогнито."));
+    }
+    btn.disabled = false; btn.textContent = "Сохранить"; render(false);
+  });
+
+  const openLib = () => { renderLibrary(); $("libOverlay").hidden = false; $("closeLib").focus(); };
+  const closeLib = () => { $("libOverlay").hidden = true; };
+  $("openLib").addEventListener("click", openLib);
+  $("closeLib").addEventListener("click", closeLib);
+  $("libOverlay").addEventListener("click", e => { if (e.target.id === "libOverlay") closeLib(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("libOverlay").hidden) closeLib(); });
+
+  let confirmDel = null;
+  function renderLibrary() {
+    const body = $("libBody");
+    if (!libReady()) { body.innerHTML = `<div class="empty"><b>Библиотека недоступна</b>Этот браузер не даёт сохранять данные, например в режиме инкогнито.</div>`; return; }
+    if (!library.length) { body.innerHTML = `<div class="empty"><b>Пока пусто</b>Загрузите фото бутылки, укажите размеры и нажмите «Сохранить в библиотеку».</div>`; return; }
+    body.innerHTML = `<div class="lib-grid">${library.map(b => {
+      const sz = [b.heightMm ? `H ${b.heightMm} мм` : "", b.baseMm ? `⌀ ${b.baseMm} мм` : ""].filter(Boolean).join(" · ") || "размеры не указаны";
+      const cur = bottle && bottle.libId === b.id;
+      return `<div class="card${cur ? " current" : ""}">
+        <div class="ph">${b.thumb ? `<img src="${esc(b.thumb)}" alt="">` : ""}</div>
+        <div class="body"><span class="nm">${esc(b.name)}</span><span class="sz">${sz}</span>
+        <div class="row">
+          <button class="btn small primary" data-pick="${b.id}">${cur ? "Выбрана" : "Выбрать"}</button>
+          ${confirmDel === b.id
+            ? `<button class="btn small danger" data-del="${b.id}">Точно удалить</button><button class="btn small" data-undel>Нет</button>`
+            : `<button class="btn small" data-ask="${b.id}">Удалить</button>`}
+        </div></div></div>`;
+    }).join("")}</div>`;
+  }
+  $("libBody").addEventListener("click", async e => {
+    const t = e.target.closest("button"); if (!t) return;
+    if (t.dataset.pick) { pickFromLibrary(library.find(b => b.id === t.dataset.pick)); closeLib(); }
+    else if (t.dataset.ask) { confirmDel = t.dataset.ask; renderLibrary(); }
+    else if ("undel" in t.dataset) { confirmDel = null; renderLibrary(); }
+    else if (t.dataset.del) {
+      const b = library.find(x => x.id === t.dataset.del); confirmDel = null;
+      try {
+        if (signedIn) {
+          if (b && b.assetId && assets) { try { await assets.delete(b.assetId); } catch (err) {} }
+          await bottlesCol.doc(t.dataset.del).delete();
+        } else { await idb.del(t.dataset.del); await loadLocalLib(); }
+        if (bottle && bottle.libId === t.dataset.del) { bottle.libId = null; bottle.assetId = null; }
+        toast("Бутылка удалена");
+      } catch (err) { toast("Не удалось удалить"); }
+      renderLibrary(); render(false);
+    }
+  });
+
+  function pickFromLibrary(b) {
+    if (!b) return;
+    const blob = localBlobs.get(b.id) || null;
+    bottle = { src: blob ? URL.createObjectURL(blob) : (b.thumb || PLACEHOLDER), thumb: b.thumb, name: b.name, w: b.w, h: b.h, hash: b.hash, libId: b.id, assetId: b.assetId || null, ext: b.ext, localBlob: blob };
+    meta = { h: b.heightMm ? String(b.heightMm) : "", d: b.baseMm ? String(b.baseMm) : "" };
+    memSource = "Размеры из библиотеки";
+    $("bottleStatus").hidden = true;
+    syncMetaInputs(); render();
+    if (b.assetId && !blob) {
+      const full = new Image();
+      full.onload = () => { if (bottle && bottle.libId === b.id) { bottle.src = full.src; render(false); } };
+      full.src = "/_blob/" + b.assetId;
+    }
+  }
+
+  async function downloadOriginal() {
+    if (!bottle || (!bottle.localBlob && !(downloads && bottle.assetId))) return;
+    try {
+      const blob = bottle.localBlob || await (await fetch("/_blob/" + bottle.assetId)).blob();
+      const safe = bottle.name.replace(/[\\/:*?"<>|]+/g, " ").trim() || "bottle";
+      await saveFile(`${safe}.${bottle.ext || "png"}`, blob);
+    } catch (e) {
+      if (!e || e.code !== "declined") toast("Не удалось скачать оригинал");
+    }
+  }
+
+  // ---------- 3D clay preview ----------
+  const V3 = (() => {
+    if (!window.THREE) return null;
+    try {
+      const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+      renderer.setPixelRatio(1);
+      renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      const scene = new THREE.Scene();
+      scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8a8a, 0.62));
+      const key = new THREE.DirectionalLight(0xffffff, 0.85);
+      key.position.set(-2.4, 4, 3.2); key.castShadow = true;
+      key.shadow.mapSize.set(1024, 1024); key.shadow.radius = 5; key.shadow.bias = -0.0008;
+      Object.assign(key.shadow.camera, { left: -2.5, right: 2.5, top: 2.5, bottom: -2.5, near: 0.5, far: 12 });
+      scene.add(key);
+      const fill = new THREE.DirectionalLight(0xffffff, 0.3); fill.position.set(3, 1.5, 2.5); scene.add(fill);
+      const rim = new THREE.DirectionalLight(0xffffff, 0.35); rim.position.set(0.5, 2.5, -3); scene.add(rim);
+
+      const floorMat = new THREE.MeshStandardMaterial({ color: 0xbdbdbd, roughness: 0.95 });
+      const wallMat = new THREE.MeshStandardMaterial({ color: 0xc8c8c8, roughness: 0.95 });
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), floorMat);
+      floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+      const wall = new THREE.Mesh(new THREE.PlaneGeometry(60, 30), wallMat);
+      wall.position.set(0, 15, -0.9); wall.receiveShadow = true; scene.add(wall);
+
+      const glassMat = new THREE.MeshStandardMaterial({ color: 0xa4a4a4, roughness: 0.45 });
+      const labelMat = new THREE.MeshStandardMaterial({ color: 0xf3e4c8, roughness: 0.9 });
+      const capMat = new THREE.MeshStandardMaterial({ color: 0x858585, roughness: 0.6 });
+      const tumblerMat = new THREE.MeshStandardMaterial({ color: 0xe2e2e2, roughness: 0.2, transparent: true, opacity: 0.6 });
+      const tumbler = new THREE.Mesh(new THREE.LatheGeometry([[0, 0], [0.43, 0], [0.46, 0.05], [0.5, 1], [0.47, 1], [0.43, 0.08], [0, 0.08]].map(([x, y]) => new THREE.Vector2(x, y)), 48), tumblerMat);
+      tumbler.castShadow = true; tumbler.receiveShadow = true;
+      // yawG turns a flat-lay bottle along the frame's long side; pose lays/tilts it; spin turns it around its axis
+      const yawG = new THREE.Group(), pose = new THREE.Group(), spin = new THREE.Group();
+      yawG.add(pose); pose.add(spin); scene.add(yawG); scene.add(tumbler);
+      let builtRatio = null, R = 0.14;
+
+      function build(ratio) {
+        if (builtRatio === ratio) return;
+        builtRatio = ratio;
+        spin.children.slice().forEach(m => { spin.remove(m); m.geometry.dispose(); });
+        R = 0.5 / ratio;
+        const nr = Math.max(R * 0.3, 0.032), cr = nr * 1.18;
+        const pts = [[0, 0], [R * 0.9, 0], [R, 0.025], [R, 0.6]];
+        for (let i = 1; i <= 12; i++) { const t = i / 12, e = t * t * (3 - 2 * t); pts.push([R + (nr - R) * e, 0.6 + 0.2 * t]); }
+        pts.push([nr, 0.885], [nr * 1.12, 0.89], [nr * 1.12, 0.9], [0, 0.9]);
+        const body = new THREE.Mesh(new THREE.LatheGeometry(pts.map(([x, y]) => new THREE.Vector2(x, y)), 72), glassMat);
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(cr, cr, 0.1, 48), capMat); cap.position.y = 0.95;
+        const label = new THREE.Mesh(new THREE.CylinderGeometry(R * 1.008, R * 1.008, 0.3, 48, 1, true, -0.95, 1.9), labelMat); label.position.y = 0.36;
+        const neckLabel = new THREE.Mesh(new THREE.CylinderGeometry(nr * 1.03 + 0.002, nr * 1.03 + 0.002, 0.05, 32, 1, true, -1.2, 2.4), labelMat); neckLabel.position.y = 0.84;
+        [body, cap, label, neckLabel].forEach(m => { m.castShadow = true; m.receiveShadow = true; spin.add(m); });
+      }
+
+      const cam = new THREE.PerspectiveCamera(30, 1, 0.01, 200);
+      const tmpColor = new THREE.Color(), target = new THREE.Vector3();
+
+      function draw(o, W, H) {
+        build(o.ratio);
+        tmpColor.set(o.scene === "studio" ? o.bg : "#BFBFBF");
+        wallMat.color.copy(tmpColor); floorMat.color.copy(tmpColor).multiplyScalar(0.86);
+        scene.background = tmpColor;
+        renderer.setSize(W, H, false);
+        const aspect = W / H, portrait = aspect < 1;
+        const vfov = 2 * Math.atan((portrait ? 36 : 24) / (2 * +o.lens));
+        cam.fov = vfov * 180 / Math.PI; cam.aspect = aspect;
+        const tan2 = 2 * Math.tan(vfov / 2);
+        const mode = o.angle === "flatlay" ? "flat" : o.angle === "topstand" ? "topstand" : "side";
+        const lying = mode === "flat" || (mode === "side" && o.rot === "lying");
+
+        yawG.rotation.set(0, 0, 0); pose.rotation.set(0, 0, 0); pose.position.set(0, 0, 0); spin.rotation.set(0, 0, 0);
+        if (mode === "side") {
+          spin.rotation.y = { front: 0, "q-left": -0.72, "q-right": 0.72, "p-left": -Math.PI / 2, "p-right": Math.PI / 2, tilt: 0, lying: 0 }[o.rot] || 0;
+          if (o.rot === "tilt") pose.rotation.z = o.pos === "right" ? 0.21 : -0.21;
+        }
+        if (lying) { pose.rotation.z = Math.PI / 2; pose.position.set(0.5, R, 0); }
+        if (mode === "flat") {
+          // label up by default; the rotation options roll the bottle around its axis, "tilt" lays it diagonally
+          spin.rotation.y = Math.PI / 2 + ({ "q-left": -0.72, "q-right": 0.72, "p-left": -Math.PI / 2, "p-right": Math.PI / 2 }[o.rot] || 0);
+          yawG.rotation.y = (portrait ? -Math.PI / 2 : 0) + (o.rot === "tilt" ? 0.5 : 0);
+        }
+        wall.visible = mode === "side";
+        // the glass always stands upright beside the bottle, whatever the bottle does
+        tumbler.visible = !!o.glass;
+        if (o.glass) {
+          const gr = o.glass.d / 2, side = o.pos === "right" ? -1 : 1, gap = R + gr + 0.06;
+          tumbler.scale.set(o.glass.d, o.glass.h, o.glass.d);
+          if (mode === "flat") tumbler.position.set(portrait ? side * gap : 0.15, 0, portrait ? 0.12 : -gap);
+          else if (lying) tumbler.position.set(0.15 * side, 0, -gap);
+          else tumbler.position.set(side * gap, 0, 0.1);
+        }
+        if (mode === "side") { key.position.set(-2.4, 4, 3.2); key.intensity = 0.85; } else { key.position.set(-1.6, 6, 1.4); key.intensity = 0.55; }
+
+        const frac = { small: 0.4, medium: 0.6, large: 0.8 }[o.size] * (o.crop ? (o.angle === "hero" ? 1.15 : 1.3) : 1);
+        let d;
+        cam.up.set(0, 1, 0);
+        if (mode === "topstand") {
+          const f = { small: 0.22, medium: 0.33, large: 0.45 }[o.size] * (o.crop ? 1.6 : 1);
+          d = 2 * R / (f * tan2 * Math.min(1, aspect));
+          target.set(0, 0.95, 0); cam.position.set(0, 0.95 + d, 0.0001); cam.up.set(0, 0, -1);
+        } else if (mode === "flat") {
+          const V = portrait ? 1 : 2 * R, Hz = portrait ? 2 * R : 1;
+          d = Math.max(V / ((portrait ? frac : 0.9) * tan2), Hz / ((portrait ? 0.9 : frac) * tan2 * aspect)) + R;
+          target.set(0, R, 0); cam.position.set(0, R + d, 0.0001); cam.up.set(0, 0, -1);
+        } else {
+          const el = { eye: 0, low: -0.16, verylow: -0.3, hero: -0.3, high: 0.42, steep: 1.05 }[o.angle] || 0;
+          const cy = lying ? R : 0.5;
+          if (lying) d = Math.max((2 * R + Math.max(0, Math.sin(el)) * 2 * R) / (0.9 * tan2), 1 / (frac * 0.8 * tan2 * aspect)) + R;
+          else d = Math.max((el > 0 ? Math.cos(el) + Math.sin(el) * 2 * R : 1) / (frac * tan2), 2 * R / (0.9 * tan2 * aspect)) + R;
+          target.set(0, cy, 0);
+          if (o.angle === "eye") cam.position.set(0, lying ? R : 0.42, d);
+          else if (o.angle === "verylow") cam.position.set(0, 0.03, d);
+          else if (o.angle === "hero") { cam.position.set(0, 0.02, d); target.set(0, 0.02, 0); }
+          else cam.position.set(0, cy + d * Math.sin(el), d * Math.cos(el));
+        }
+        cam.lookAt(target);
+        if (o.dutch && mode === "side") cam.rotateZ(0.12);
+
+        const px = { left: 1 / 3, center: 0.5, right: 2 / 3 }[o.pos];
+        let offX = W * (0.5 - px), offY = 0;
+        // hero: the level camera sits at surface height; the frame is shifted like a shift lens so the base stays low
+        if (mode === "side" && o.angle === "hero") offY = -H * 0.35;
+        if (o.crop && !(mode === "side" && o.angle === "hero")) {
+          if (mode === "topstand") offY = -H * 0.22;
+          else if (lying && !(mode === "flat" && portrait)) offX -= W * 0.12;
+          else offY = -H * 0.12;
+        }
+        if (offX || offY) cam.setViewOffset(W, H, offX, offY, W, H); else cam.clearViewOffset();
+        cam.updateProjectionMatrix();
+        renderer.render(scene, cam);
+        return renderer.domElement;
+      }
+      return { draw };
+    } catch (e) { return null; }
+  })();
+
+  const ratioOf = () => (+meta.h > 0 && +meta.d > 0) ? Math.min(8, Math.max(1.2, +meta.h / +meta.d)) : 3.6;
+
+  const drawOpts = E => {
+    const bh = +meta.h || 300;
+    const glass = E.props.includes("glass") && !exactOn() ? { h: (+S.glassH || 95) / bh, d: (+S.glassD || 80) / bh } : null;
+    return { ...E, ratio: ratioOf(), glass };
+  };
+
+  // thumbnails: each option is drawn with the current settings plus that option
+  const THUMB_GRIDS = [
+    ["rotGrid", v => ({ rot: v, crop: false, dutch: false })],
+  ];
+  function renderThumbs(E) {
+    const [fa, fb] = S.format.split(":").map(Number), aspect = fa / fb;
+    let h = 92, w = Math.round(h * aspect);
+    if (w > 170) { w = 170; h = Math.round(w / aspect); }
+    const base = drawOpts(E);
+    THUMB_GRIDS.forEach(([id, ov]) => {
+      const grid = $(id), btns = [...grid.querySelectorAll("button")];
+      btns.forEach(b => {
+        let c = b.querySelector("canvas, .ph");
+        if (!c) { c = document.createElement(V3 ? "canvas" : "div"); if (!V3) c.className = "ph"; b.prepend(c); }
+        c.style.width = w + "px"; c.style.height = h + "px";
+      });
+      if (!V3) return;
+      const key = JSON.stringify([w, h, base.ratio, E.format, E.angle, E.rot, E.size, E.pos, E.crop, E.scene, E.bg, E.lens, base.glass]);
+      if (grid._thumbKey === key) return;
+      grid._thumbKey = key;
+      btns.forEach(b => {
+        const c = b.querySelector("canvas"); c.width = w * 2; c.height = h * 2;
+        c.getContext("2d").drawImage(V3.draw({ ...base, ...ov(b.dataset.v) }, w * 2, h * 2), 0, 0);
+      });
+    });
+  }
+
+  function renderPreview(E) {
+    E = E || eff();
+    const [a, b] = S.format.split(":").map(Number), aspect = a / b;
+    $("frameMeta").textContent = `${S.format} · ${S.res}`;
+    const stage = $("stage"), frame = $("frame");
+    const sw = Math.max(120, stage.clientWidth - 28), sh = stage.clientHeight - 28;
+    let w = sw, h = w / aspect; if (h > sh) { h = sh; w = h * aspect; }
+    frame.style.width = Math.round(w) + "px"; frame.style.height = Math.round(h) + "px";
+    $("veil").hidden = !exactOn();
+
+    if (V3) {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const W = Math.round(w * dpr), H = Math.round(h * dpr);
+      const cv = $("view3d"); cv.width = W; cv.height = H;
+      cv.getContext("2d").drawImage(V3.draw(drawOpts(E), W, H), 0, 0);
+    } else {
+      // fallback without WebGL: flat schematic with the uploaded photo
+      $("view3d").hidden = true; $("frameBg").hidden = false; $("pvBottle").hidden = false;
+      $("viewNote").textContent = "Схема композиции. 3D-превью недоступно в этом браузере.";
+      $("frameBg").style.background = S.scene === "studio" ? S.bg : "#3a2a1c";
+      const img = $("pvBottle"), src = bottle ? bottle.src : PLACEHOLDER;
+      if (img.getAttribute("src") !== src) img.src = src;
+      const Hp = { small: 40, medium: 60, large: 80 }[E.size] * (E.crop ? 1.3 : 1);
+      Object.assign(img.style, { height: Hp + "%", left: { left: 33.3, center: 50, right: 66.6 }[E.pos] + "%", bottom: (E.crop ? -Hp * .28 : (100 - Hp) * .35) + "%", transform: `translateX(-50%) rotate(${E.rot === "lying" || E.angle === "flatlay" ? 90 : E.rot === "tilt" ? 12 : 0}deg)` });
+    }
+    const cb = $("copyBox"); cb.hidden = !S.copySpace || exactOn();
+    if (!cb.hidden) {
+      if (E.pos === "center") Object.assign(cb.style, { left: "20%", right: "20%", width: "auto", top: "5%", bottom: "auto", height: "16%" });
+      else Object.assign(cb.style, { width: "34%", top: "12%", bottom: "12%", height: "auto", left: E.pos === "left" ? "auto" : "6%", right: E.pos === "left" ? "6%" : "auto" });
+    }
+  }
+  let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => renderPreview(), 120); });
+
+  // 3D layout sketch for Nano Banana (optional Image 2)
+  function schemeBlob() {
+    return new Promise(res => {
+      const [a, b] = S.format.split(":").map(Number), L = 1280;
+      const W = a >= b ? L : Math.round(L * a / b), H = a >= b ? Math.round(L * b / a) : L;
+      const c = document.createElement("canvas"); c.width = W; c.height = H;
+      c.getContext("2d").drawImage(V3.draw(drawOpts(eff()), W, H), 0, 0);
+      c.toBlob(res, "image/png");
+    });
+  }
+  document.addEventListener("click", async e => {
+    const b = e.target.closest("[data-scheme]"); if (!b || !V3) return;
+    if (b.dataset.scheme === "copy") {
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": schemeBlob() })]);
+        toast("Схема скопирована: вставьте её в Nano Banana второй картинкой");
+      } catch (err) { toast("Скопировать не получилось. Скачайте PNG"); }
+    } else {
+      try { await saveFile(`3d-skhema-${S.format.replace(":", "x")}.png`, await schemeBlob()); }
+      catch (err) { if (!err || err.code !== "declined") toast("Не удалось скачать схему"); }
+    }
+  });
+
+  // ---------- color naming for the prompt ----------
+  function colorName(hex) {
+    const n = parseInt(hex.slice(1), 16), r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+    const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+    let h = 0;
+    if (d) { h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360; }
+    if (l > 0.94) return "pure white";
+    if (l < 0.09) return "deep black";
+    if (s < 0.14 || d < 0.09) return `${l > 0.75 ? "light" : l > 0.45 ? "mid" : l > 0.2 ? "dark" : "charcoal"} ${d < 0.02 ? "neutral" : (r >= b ? "warm" : "cool")} grey`;
+    const hues = [[15,"red"],[40,"burnt orange"],[55,"amber"],[70,"golden yellow"],[95,"olive"],[150,"green"],[185,"teal"],[215,"steel blue"],[250,"navy blue"],[290,"purple"],[330,"magenta"],[360,"crimson"]];
+    let name = hues.find(([lim]) => h < lim)[1];
+    if (name === "burnt orange" && l > 0.55) name = "caramel beige";
+    return (l > 0.72 ? "pale " : l < 0.3 ? "deep " : s < 0.35 ? "muted " : "") + name;
+  }
+
+  // ---------- prompt ----------
+  const T = {
+    pos: { left: "positioned in the left third of the frame", center: "centered horizontally in the frame", right: "positioned in the right third of the frame" },
+    size: { small: "occupying about 40% of the frame height, with generous surrounding space", medium: "occupying about 60% of the frame height", large: "occupying about 80% of the frame height, dominant in the frame" },
+    pct: { small: 40, medium: 60, large: 80 },
+    topPct: { small: 22, medium: 33, large: 45 },
+    rot: {
+      front: "The bottle is not rotated around its own axis: the front label faces the camera side.",
+      "q-left": "Bottle rotated about 30–45° to the left (three-quarter view), label still clearly readable on the visible side.",
+      "q-right": "Bottle rotated about 30–45° to the right (three-quarter view), label still clearly readable on the visible side.",
+      "p-left": "Bottle shown in full side profile facing left, emphasizing its silhouette and shoulder shape.",
+      "p-right": "Bottle shown in full side profile facing right, emphasizing its silhouette and shoulder shape.",
+      tilt: "Bottle standing slightly tilted, about 10–15° off vertical, as if dynamically leaning; physically plausible.",
+      lying: "Bottle lying horizontally on its side on the surface, label facing the camera and readable."
+    },
+    angle: {
+      eye: "Camera at eye level with the label, lens axis parallel to the ground.",
+      low: "Camera slightly below the label looking up (hero angle), making the bottle look tall and premium.",
+      verylow: "Low camera angle close to the surface level, looking up at the bottle for a monumental look.",
+      high: "Camera slightly above the bottle, looking down at about 20–30°.",
+      steep: "High camera angle looking down at about 60°: both the top of the cap and the front label are visible, the label appears foreshortened.",
+      topstand: "Camera directly above the standing bottle, pointing straight down (90° top view). The frame shows the top of the cap, the neck and the shoulders as concentric round shapes, with the surface around them. The front label is not visible from this angle, and that is intended.",
+      flatlay: "Flat lay: camera directly above, pointing straight down (90°) at the bottle lying on the surface."
+    },
+    lens: { "35": "35mm lens, more environment visible, mild natural perspective.", "50": "50mm lens, natural perspective.", "85": "85mm lens, classic product perspective with minimal distortion.", "100": "100mm macro lens, tight detailed product rendering.", "135": "135mm telephoto lens, compressed perspective, background pulled closer." },
+    dof: { shallow: "shallow depth of field (around f/2), background softly blurred with creamy bokeh", medium: "moderate depth of field (around f/5.6), background slightly soft", deep: "deep depth of field (around f/11), the whole scene sharp" },
+    surface: { matte: "on a clean matte tabletop in the same color as the backdrop (seamless sweep)", gloss: "on a glossy reflective surface with a clean, soft mirror reflection of the bottle", wood: "on a dark natural wood surface with visible grain", stone: "on a honed dark stone surface with subtle texture" },
+    shadow: { soft: "soft, neutral, diffused shadows with a gentle contact shadow under the bottle", hard: "crisp, graphic hard-edged shadows cast from a single strong light" },
+    light: {
+      softbox: "Soft studio lighting from large softboxes, even and clean, controlled specular highlights along the glass edges.",
+      lowkey: "Dramatic low-key lighting: selective light sculpting the bottle, deep rich shadows, the surroundings falling off into darker tones.",
+      rim: "Rim lighting from behind on both sides outlining the bottle silhouette with bright edge highlights that separate it from the background.",
+      window: "Soft directional daylight as if from a large side window, gentle gradients, airy feel.",
+      golden: "Warm, low-angle directional light in the style of golden-hour sun, with long soft shadows.",
+      warm: "Warm evening light in the style of practical interior lamps, cozy tones."
+    },
+    props: { glass: "a glass with some of the drink in it next to the bottle, at realistic scale", ice: "clear ice cubes", splash: "a dynamic frozen splash of the liquid", smoke: "subtle wisps of smoke", drops: "fine condensation droplets on the bottle glass (not covering the label text)", citrus: "fresh citrus slices", botanicals: "fresh herbs and botanicals", barrel: "an oak barrel element", grain: "a few ears of grain", box: "a gift box placed beside the bottle (generic, without invented branding)" },
+    use: { light: "the lighting (direction, softness, color temperature, contrast)", env: "the environment (location, surfaces, materials, color palette)", lens: "the camera look (focal length, perspective, depth of field)", style: "the overall photographic style, color grading and mood" }
+  };
+  const VIEW = {
+    hero: { short: "a heroic low angle from the height of the surface, with a level camera and parallel verticals", cues: "This is NOT an eye-level view and NOT a tilted worm's-eye view. The camera is placed low, at about the height of the surface the bottle stands on, and is kept perfectly level (not tilted up); the framing is shifted upward as with a shift lens. Because of this, all vertical lines of the bottle stay strictly vertical and parallel: no converging lines, no keystone distortion, the bottle does not taper toward the top. The bottle rises from the lower part of the frame and looks monumental because we see it from the level of its base; the surface it stands on is seen almost edge-on, as a thin band or its front edge at the bottom of the frame; behind the bottle there is mostly background (wall or sky) seen from a low point. The label faces the camera straight on and is not foreshortened." },
+    eye: { short: "eye level, straight on", cues: "The camera is level with the middle of the label. The top of the cap and the base are seen edge-on, almost as straight lines." },
+    low: { short: "a slightly low angle, looking up", cues: "The camera is slightly below the label, looking up. The base is seen as a thin ellipse, the cap looks slightly smaller, the bottle looks tall and heroic." },
+    verylow: { short: "a very low angle near the surface, looking up", cues: "The camera is almost at surface level, looking up. Strong upward perspective: the bottle towers over the viewer and the surface is a thin strip at the bottom of the frame." },
+    high: { short: "a slightly elevated angle, looking down about 25°", cues: "The camera is a little above the bottle, looking down. The top of the cap is visible as a narrow ellipse, the surface in front of the bottle is visible, and the label is slightly foreshortened." },
+    steep: { short: "a high angle, looking steeply down at about 60°", cues: "This is NOT a front view. The camera is well above the bottle, looking down at it. Visible cues: the top of the cap is clearly visible as a wide ellipse; the shoulders take up a large part of the silhouette; the bottle appears to taper toward its base because of perspective; the base is hidden or seen as a wide ellipse; the label is clearly foreshortened (compressed vertically) and seen from above; behind the bottle there is mostly the surface it stands on, with little or no background wall; the horizon is outside the frame." },
+    topstand: { short: "directly above, looking straight down at the standing bottle (90°)", cues: "This is NOT a front view, and the bottle is NOT lying down. The camera hangs directly over the cap. Visible cues: the round top of the cap in the center, surrounded by the ring of the neck and the round shoulders; the body below is hidden behind the shoulders; the label is not visible; the rest of the frame is the surface the bottle stands on, with the bottle's shadow falling on it." },
+    flatlay: { short: "directly above, looking straight down at the bottle lying on the surface (flat lay, 90°)", cues: "The bottle lies on the surface and the camera is directly above it, parallel to the surface. No horizon, no background wall: the whole frame is the surface." }
+  };
+  const LYING_CUES = { hero: "The camera is level, at the height of the surface the bottle lies on, looking straight at the lying bottle: no converging lines, the surface is seen almost edge-on", high: "The camera is a little above the lying bottle, looking down: the upper side of the bottle and the surface around it are visible, and the label is slightly foreshortened.", steep: "This is NOT a side view. The camera is well above the lying bottle, looking steeply down: mostly the upper side of the bottle and the surface around it are visible, the label is foreshortened, and there is little or no background wall." };
+  function glassText(where = "placed next to the bottle") {
+    const gh = +S.glassH, gd = +S.glassD;
+    let t = glassImgOn()
+      ? `the glass shown in Image ${glassIdx()} (reproduce its shape, proportions and material exactly), with some of the drink in it, ${where}`
+      : `a glass with some of the drink in it, ${where}`;
+    if (gh || gd) t += ` (${[gh ? gh + " mm tall" : "", gd ? gd + " mm rim diameter" : ""].filter(Boolean).join(", ")}${+meta.h ? ", keep its size correct relative to the bottle" : ""})`;
+    else t += ", at realistic scale";
+    return t;
+  }
+  function flatOrientation(rot, capDir) {
+    const capT = ` Cap pointing toward the ${capDir} of the frame.`;
+    return {
+      front: "The bottle lies on its side with the front label facing straight up toward the camera, seen flat and undistorted." + capT,
+      "q-left": "The bottle lies on its side, rolled about 30–45° so the front label faces up and slightly to the left; the label is still readable and foreshortened toward its edge." + capT,
+      "q-right": "The bottle lies on its side, rolled about 30–45° so the front label faces up and slightly to the right; the label is still readable and foreshortened toward its edge." + capT,
+      "p-left": "The bottle lies on its side, rolled 90° so the front label faces left, sideways: from above the camera sees the side of the bottle and only the edge of the label." + capT,
+      "p-right": "The bottle lies on its side, rolled 90° so the front label faces right, sideways: from above the camera sees the side of the bottle and only the edge of the label." + capT,
+      tilt: "The bottle lies on its side with the front label facing straight up, placed diagonally across the frame at about 30° to its longer side, cap pointing toward the upper-left corner."
+    }[rot] || "";
+  }
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  const listJoin = a => a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
+  const fmtRatio = () => (+meta.h > 0 && +meta.d > 0) ? (+meta.h / +meta.d).toFixed(2).replace(/\.?0+$/, "") : null;
+
+  function buildPrompt() {
+    const E = eff();
+    const img1 = "Image 1", st = refStart();
+    const refRange = !refsUsed() ? "" : refs.length === 1 ? `Image ${st}` : `Images ${st}–${st + refs.length - 1}`;
+    const [fa, fb] = S.format.split(":").map(Number);
+    const orient = fa === fb ? "square" : fa > fb ? "horizontal" : "vertical";
+    const exact = exactOn(), sceneText = S.scene === "custom" ? S.sceneText.trim() : "";
+    const top = topMode(E.angle), flat = E.angle === "flatlay", topstand = E.angle === "topstand";
+    const lying = flat || E.rot === "lying";
+    const turned = ["q-left", "q-right", "p-left", "p-right"].includes(E.rot);
+    const labelHidden = topstand || E.rot === "p-left" || E.rot === "p-right";
+    const sec = [];
+    sec.push(["", exact
+      ? `Create a photorealistic high-end commercial advertising photograph by recreating the reference scene (${refRange}) and replacing its product with the bottle from the attached product reference (${img1}).`
+      : `Create a photorealistic high-end commercial advertising photograph of the bottle from the attached product reference (${img1}), shot from ${VIEW[E.angle].short}. Place this exact bottle into the scene described below.`]);
+
+    const reangled = !exact && (E.angle !== "eye" || E.rot !== "front");
+    if (!exact) {
+      let vp = (lying && E.angle !== "flatlay" && LYING_CUES[E.angle]) || (E.angle === "eye" && lying ? "The camera is at the height of the lying bottle, close to the surface level." : VIEW[E.angle].cues);
+      if (reangled) vp += `
+${img1} only shows what the product looks like. Do not copy its frontal camera angle: re-render the bottle from the viewpoint described here.`;
+      sec.push(["VIEWPOINT (most important)", vp]);
+      if (schemeOn()) sec.push(["LAYOUT GUIDE", `Image 2 is a simplified grey 3D layout sketch of this exact viewpoint. Match its camera angle, perspective, the bottle's pose, position and size in the frame as closely as possible. Ignore its grey colors, materials, lighting, background and simplified bottle shape; the real bottle comes from ${img1}.`]);
+    }
+
+    // integration comes first: it is the instruction models most often skip
+    const withGlass = S.props.includes("glass");
+    const objs = withGlass ? "the bottle and the glass" : "the bottle";
+    const asObjects = withGlass ? "real three-dimensional objects that physically belong" : "a real three-dimensional object that physically belongs";
+    const castVerb = withGlass ? "cast" : "casts", touchVerb = withGlass ? "they touch" : "it touches";
+    sec.push(["INTEGRATION (no pasted cut-outs)", [
+      `Do not copy the pixels of ${img1}${withGlass && glassImgOn() ? " or of the glass photo" : ""} and do not paste them as flat cut-outs. Draw ${objs} anew as ${asObjects} to this scene, seen through this scene's camera and lit by this scene's light.`,
+      `Perspective check: the bottle's base and shoulders are round, so from this camera they must look like ellipses that open exactly as much as the other round objects on the same surface (glass rims, coasters, trays, plates). If those objects look like ellipses, the bottle's base must too. A bottle seen straight on, with a flat base, among elliptical rims is a pasted cut-out and is wrong. ${objs.charAt(0).toUpperCase() + objs.slice(1)} must sit on the same ground plane with correct contact with the surface.`,
+      `Light check: find the main light of the scene (its direction, hardness and color). The bottle's brightest highlight and lit side are on that same side and its darker side is opposite, with the same hardness of light as on the neighbouring objects. Reflections of the environment appear on the glass, the background is refracted through the glass and liquid, and light passing through the liquid tints the surface. Ignore the lighting, background and reflections of the source photos.`,
+      `Shadow check: ${objs} ${castVerb} shadows in the same direction, with the same length and softness as the shadows of the other objects, plus soft contact shadows where ${touchVerb} the surface${withGlass ? "; the bottle and the glass also shade each other" : ""}.`,
+      "Camera match: the same depth of field, sharpness, grain, noise and color grading as the rest of the image. No cut-out edges, halos, white outlines or mismatched sharpness."
+    ].map(x => "- " + x).join("\n")]);
+
+    const fid = [
+      `Keep the bottle's design from ${img1}: identical shape, proportions, glass color and transparency, cap, liquid color and fill level.`,
+      reangled && !(flat && (E.rot === "front" || E.rot === "tilt")) && !(E.angle === "hero" && E.rot === "front")
+        ? `Keep the label design the same as in ${img1}: same layout, typography, text, logos, colors and placement. This means the same design, not the same pixels: the label is drawn in correct perspective for this viewpoint, wraps around the curved glass and is foreshortened accordingly. Do not flatten it or turn it toward the camera.`
+        : `Keep the label design the same as in ${img1}: same layout, typography, text, logos, colors and placement. This means the same design, not the same pixels: the label is drawn in the scene's perspective and light.`,
+      `Do not translate, simplify or invent any text or graphics. Every visible word is spelled exactly as on ${img1}.`,
+      labelHidden && !exact ? `Wherever parts of the label are visible, they must match the design of ${img1} exactly.` : "All visible label text must stay sharp and legible.",
+      "Do not add or remove any design elements on the bottle.",
+      `Never stretch, squash or otherwise distort the bottle's proportions to make it fit the frame${exact ? ", the space of the reference or the silhouette of the reference product" : ""}. If at its true proportions the bottle does not fit (for example, it is taller than ${exact ? "the product in the reference" : "the space allows"}), either scale the whole bottle down uniformly or let it be cut off by the frame edge.`
+    ];
+    if (!exact && turned) fid.push("The label wraps naturally with the bottle's curvature; parts turned away from the camera may be hidden, but never invent content for the hidden side.");
+    if (!exact && topstand) fid.push("Do not move, copy or redraw the label onto the cap or shoulders to make it visible from above.");
+    sec.push(["PRODUCT FIDELITY", fid.map(x => "- " + x).join("\n")]);
+
+    const h = +meta.h, d = +meta.d;
+    if (h || d) {
+      let sz = "Real-world size of the bottle: " + [h ? `${h} mm tall` : "", d ? `${d} mm base diameter` : ""].filter(Boolean).join(", ") + ".";
+      const r = fmtRatio();
+      if (r) sz += ` Height is ${r}× the base width; keep exactly these proportions.`;
+      sz += " Render the bottle at true real-world scale relative to the surface and environment.";
+      sec.push(["SIZE", sz]);
+    }
+
+    sec.push(["FORMAT", `Aspect ratio ${S.format} (${orient}), ${S.res} resolution.${exact ? " Adapt the reference composition to this aspect ratio if it differs." : ""}`]);
+
+    if (exact) {
+      let sc = `Recreate the scene from ${refRange} as exactly as possible: the same location, surfaces, objects and their arrangement, composition, camera angle, lens and depth of field, lighting and color grading.`;
+      sc += `\nReplace the product shown in the reference with the bottle from ${img1}, in exactly the same position, size in the frame, pose and rotation: the same side of the bottle faces the camera, with the same tilt, and it stands or lies the same way. Adjust only to the bottle's real proportions. Keep the reflections, shadows and contact with the surface physically correct.`;
+      sc += `\n${img1} only shows what the product looks like. Its camera angle and rotation must follow the reference scene, not ${img1}.`;
+      if (S.props.includes("glass")) sc += S.glassSwap
+        ? `\nIf the reference shows one or more glasses, replace every one of them with ${glassText("each in the place of the glass it replaces")}: all glasses in the frame must be this glass. If the reference has no glass, place this glass next to the bottle instead. Each glass stands upright on its base.`
+        : `\nIn addition to everything in the reference, add ${glassText()}. The glass stands upright on its base.`;
+      sc += `\nDo not copy any bottles, labels, logos or text from the reference: the only product in the frame is the bottle from ${img1}.`;
+      if (sceneText) sc += `\nAdditional changes requested by the client: ${sceneText}`;
+      sec.push(["SCENE", sc]);
+    } else {
+      const pct = T.pct[E.size];
+      let comp;
+      if (topstand) comp = `Seen from above, the bottle is ${T.pos[E.pos]}; its cap and shoulders span about ${T.topPct[E.size]}% of the frame's shorter side.`;
+      else if (flat) comp = `The lying bottle runs along the frame's longer side, ${T.pos[E.pos]}; its length spans about ${pct}% of the frame's longer side.`;
+      else if (lying) comp = `The lying bottle is ${T.pos[E.pos]}; its length spans about ${Math.round(pct * 0.8)}% of the frame width.`;
+      else comp = `The bottle is ${T.pos[E.pos]}, ${T.size[E.size]}.`;
+      if (E.crop) comp += topstand
+        ? " A bold crop is allowed: the bottle may be partly cut by the frame edge, but the cap stays inside the frame."
+        : lying
+          ? " A bold crop is allowed: the base end of the bottle may be cut off by the frame edge; the cap and the main part of the label stay inside the frame."
+          : E.angle === "hero"
+            ? " A bold crop is allowed at the top: the neck and cap may be cut off by the top edge of the frame, while the base stays inside the frame and the main part of the label stays inside and readable. Do not cut the bottom of the bottle."
+            : " A bold crop is allowed: the bottle may be partially cut off by the frame edge, but the main part of the label must stay inside the frame and readable.";
+      else comp += topstand
+        ? " The whole top view of the bottle (cap and shoulders) is inside the frame with comfortable margins."
+        : " The entire bottle, including the cap and base, is fully visible inside the frame with comfortable margins.";
+      if (S.copySpace) comp += ` Leave clean, uncluttered negative space on the ${E.pos === "left" ? "right side" : E.pos === "right" ? "left side" : "upper part"} of the frame for advertising copy (do not put any text there).`;
+      sec.push(["COMPOSITION", comp]);
+
+      sec.push(["BOTTLE ORIENTATION", topstand
+        ? "The bottle stands upright on the surface. Do not lay it down and do not tilt it toward the camera."
+        : flat
+          ? flatOrientation(E.rot, fa < fb ? "top" : "left")
+          : T.rot[E.rot]]);
+
+      let camT = (fromRef("lens") ? `Match the focal length, perspective and depth of field of ${refRange}.` : `${T.lens[E.lens]} ${cap(top ? T.dof[E.dof].replace("background", "the surface around the bottle") : T.dof[E.dof])}.`);
+      if (E.dutch) camT += " Slight Dutch tilt of the camera (about 5–8°) for dynamism.";
+      sec.push(["CAMERA", camT]);
+
+      const verb = lying ? "lies" : "stands";
+      if (S.scene === "studio") {
+        if (top) {
+          const surf = {
+            matte: `a flat, seamless matte surface in ${colorName(S.bg)} (${S.bg})`,
+            gloss: `a flat glossy surface in ${colorName(S.bg)} (${S.bg}) with soft reflections`,
+            wood: "a dark natural wood surface with visible grain",
+            stone: "a honed dark stone surface with subtle texture"
+          }[E.surface];
+          sec.push(["SCENE", `Professional studio product shot from above. The bottle ${verb} directly on ${surf}, which fills the whole frame: no horizon, no backdrop, no edges. ${cap(T.shadow[E.shadow])}.`]);
+        } else {
+          sec.push(["SCENE", `Professional studio packshot. Seamless backdrop in ${colorName(S.bg)} (${S.bg}). The bottle ${verb} ${T.surface[E.surface]}.${E.angle === "steep" ? " From this high angle the frame shows mostly the tabletop, with little of the backdrop." : ""} ${cap(T.shadow[E.shadow])}.`]);
+        }
+      } else {
+        let sc = sceneText ? `Setting: ${sceneText}` : "Setting: a clean, premium, atmospheric environment that suits the product.";
+        if (top) sc += "\nThe camera looks straight down, so show only the surface the bottle is on, rendered in the spirit of this setting.";
+        const uses = S.refUse.filter(k => T.use[k]);
+        if (refRange && uses.length) sc += `\nFrom ${refRange} take only ${listJoin(uses.map(k => T.use[k]))}.`;
+        if (refRange && fromRef("props")) sc += `\nRecreate the props and objects arranged around the product in ${refRange} (their type, placement and styling) around the bottle.`;
+        if (refRange && (uses.length || fromRef("props"))) sc += fromRef("props") ? " Do not copy any bottles, products, logos or text from the references." : " Do not copy any bottles, products, logos, text or loose objects from them.";
+        sc += "\nThe bottle must sit naturally in the scene: correct scale, perspective, contact shadow and reflections matching the environment light.";
+        sec.push(["SCENE", sc]);
+      }
+
+      let li = fromRef("light") ? `Match the lighting of ${refRange}: direction, softness, color temperature and contrast.` : T.light[E.light];
+      if (E.glow && !fromRef("light")) li += " Add a backlight behind the bottle so the liquid glows through the glass with rich, true-to-color translucency.";
+      sec.push(["LIGHTING", li]);
+
+      if (E.props.length) {
+        let pr = "Include " + listJoin(E.props.map(p => p === "glass" ? glassText() : T.props[p])) + ". Props must not cover the label.";
+        if (E.props.includes("glass") && fromRef("props")) pr += S.glassSwap ? " If the reference props include one or more glasses, every one of them is replaced with this glass, each in its place." : " Keep any glass from the reference as well.";
+        if (E.props.includes("glass")) pr += " The glass always stands upright on its base on the surface, regardless of the bottle's orientation" + (lying || E.rot === "tilt" ? ": the bottle is not upright, but the glass does not lie down or tilt with it" : "") + (top ? "; seen from above, its rim appears as a circle" : "") + ".";
+        sec.push(["PROPS", pr]);
+      }
+    }
+
+    const rules = ["Do not change the design of the bottle or the label."];
+    if (exact) rules.push(`Do not add objects that are not present in the reference scene${S.props.includes("glass") ? ", except the glass described above" : ""}.`);
+    else {
+      const allowed = [E.props.length ? "the props listed above" : "", fromRef("props") ? "the props taken from the references" : "", sceneText ? "what the setting explicitly describes" : ""].filter(Boolean);
+      rules.push(`Do not invent or add any physical objects, props, decorations or set dressing${allowed.length ? " beyond " + listJoin(allowed) : ""}.${fromRef("props") ? "" : " Keep the space around the bottle clean."}`);
+      rules.push("Place the bottle directly on the surface described above: no boards, trays, slates, cloths, coasters, pedestals or stands under it unless they are described.");
+    }
+    if (S.c.people) rules.push("No people in the frame.");
+    if (S.c.hands) rules.push("No hands.");
+    if (S.c.drink) rules.push("No act of drinking or pouring.");
+    if (S.c.text) rules.push("No added text, captions, logos or watermarks anywhere outside the original label.");
+    if (S.c.single) rules.push("Only one bottle in the frame; no duplicates and no other brands.");
+    sec.push(["RESTRICTIONS", rules.map(x => "- " + x).join("\n")]);
+
+    if (reangled && E.angle !== "eye") sec.push(["FINAL CHECK", `The result must clearly read as a shot from ${VIEW[E.angle].short}, not as a frontal eye-level product shot.`]);
+
+    sec.push(["STYLE", fromRef("style")
+      ? `Match the photographic style and color grading of ${refRange}, while keeping true-to-life glass refraction, accurate liquid color and a natural photographic look, no CGI or illustration feel.`
+      : "Premium product advertising photography, true-to-life glass refraction and reflections, accurate liquid color, rich detail, natural photographic look, no CGI or illustration feel."]);
+    return sec;
+  }
+  const promptText = () => buildPrompt().map(([h, b]) => h ? `${h}:\n${b}` : b).join("\n\n");
+
+  // ---------- render ----------
+  function renderHandoff() {
+    const src = bottle ? bottle.src : PLACEHOLDER;
+    let first = `<span class="grow"><b>Image 1</b> · фото бутылки${bottle ? "" : " (пока не загружено)"}</span>`;
+    if (bottle && bottle.libId && !bottle.file) {
+      first += bottle.localBlob || (bottle.assetId && downloads)
+        ? `<button class="btn small" id="dlOrig">Скачать оригинал</button>`
+        : `<span class="note" style="flex-basis:100%">Оригинал этой бутылки в библиотеке не хранится, возьмите файл у себя.</span>`;
+    }
+    const items = [`<li><span class="tn"><img src="${esc(src)}" alt=""></span>${first}</li>`];
+    if (schemeOn()) items.push(`<li><span class="tn">3D</span><span class="grow"><b>Image 2</b> · 3D-схема ракурса</span><button class="btn small" data-scheme="copy">Копировать</button><button class="btn small" data-scheme="dl">Скачать</button></li>`);
+    if (glassImgOn()) items.push(`<li><span class="tn"><img src="${glassImg.src}" alt=""></span><span class="grow"><b>Image ${glassIdx()}</b> · фото бокала</span></li>`);
+    const st = refStart();
+    if (refsUsed()) refs.forEach((r, i) => items.push(`<li><span class="tn"><img src="${r.src}" alt=""></span><span class="grow"><b>Image ${i + st}</b> · референс сцены</span></li>`));
+    items.push(`<li><span class="tn">T</span><span class="grow">Затем вставьте промт. Загружайте картинки в том порядке, как в этом списке: номера в промте на него ссылаются.</span></li>`);
+    $("handoff").innerHTML = items.join("");
+    const dl = $("dlOrig"); if (dl) dl.addEventListener("click", downloadOriginal);
+  }
+
+  const renderMem = () => { const m = $("memNote"); m.hidden = !memSource; m.textContent = memSource; };
+
+  function renderBottleBlock() {
+    const src = bottle ? bottle.src : PLACEHOLDER;
+    const th = $("bottleThumb").querySelector("img");
+    if (th.getAttribute("src") !== src) th.src = src;
+    $("clearBottle").hidden = !bottle;
+    $("bottleName").textContent = bottle ? bottle.name : "Пример: условная бутылка";
+    $("bottleSub").innerHTML = bottle
+      ? (bottle.libId && !bottle.file ? "Из библиотеки. Нажмите, чтобы загрузить другое фото." : "Нажмите, чтобы заменить фото, или вставьте новое через <kbd>Ctrl</kbd>+<kbd>V</kbd>.")
+      : "Нажмите, перетащите файл или вставьте из буфера через <kbd>Ctrl</kbd>+<kbd>V</kbd>. PNG с прозрачным фоном подходит лучше всего.";
+    const r = fmtRatio();
+    $("ratio").textContent = r ? `Высота : диаметр = ${r} : 1` : "Укажите оба размера, чтобы модель держала пропорции и масштаб";
+    $("remember").disabled = !bottle;
+
+    const saveBtn = $("saveLibBtn"), note = $("libNote");
+    $("openLib").disabled = !libReady();
+    saveBtn.hidden = !!(bottle && bottle.libId);
+    saveBtn.disabled = !libReady() || !bottle;
+    if (signedIn === false && localLib && !(bottle && bottle.libId)) { note.hidden = false; note.textContent = "Библиотека хранится в этом браузере: на другом устройстве или после очистки данных браузера её не будет."; }
+    else if (signedIn === false && !localLib) { note.hidden = false; note.textContent = "Этот браузер не даёт сохранять библиотеку, например в режиме инкогнито."; }
+    else if (libReady() && bottle && bottle.libId) { note.hidden = false; note.textContent = "Эта бутылка уже есть в библиотеке. Изменения размеров сохраняются в неё, если включено «Запомнить размер»."; }
+    else if (libReady() && !bottle) { note.hidden = false; note.textContent = "Чтобы сохранить бутылку в библиотеку, сначала загрузите её фото."; }
+    else note.hidden = true;
+    renderMem();
+  }
+
+  function setLock(sectionId, locked) {
+    const s = $(sectionId);
+    s.querySelectorAll(":scope > .lockable").forEach(el => el.classList.toggle("is-locked", locked));
+    const tag = s.querySelector(".step-head .from-ref"); if (tag) tag.hidden = !locked;
+  }
+
+  function render(syncText = true) {
+    const E = eff();
+    const shown = { rot: E.rot, pos: E.pos, lens: E.lens };
+    document.querySelectorAll(".seg[data-key]").forEach(seg => {
+      const k = seg.dataset.key, v = k in shown ? shown[k] : S[k];
+      seg.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(v === b.dataset.v)));
+    });
+    document.querySelectorAll(".chips[data-multi]").forEach(g => g.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(S[g.dataset.multi].includes(b.dataset.v)))));
+    checks.forEach(f => f());
+    document.querySelectorAll(".tabs button").forEach(t => t.setAttribute("aria-selected", String(S.scene === t.dataset.scene)));
+    $("sceneStudio").hidden = S.scene !== "studio"; $("sceneCustom").hidden = S.scene !== "custom";
+    document.querySelectorAll(".sw").forEach(s => s.setAttribute("aria-pressed", String(s.dataset.c === S.bg)));
+    $("bgColor").value = S.bg; $("bgHex").textContent = `${S.bg} · ${colorName(S.bg)}`;
+    if (syncText) $("sceneText").value = S.sceneText;
+
+    const ex = exactOn(), top = topMode(E.angle);
+
+    // rotation: not applicable in top-down views
+    $("rotLock").classList.toggle("is-locked", E.angle === "topstand" && !ex);
+    document.querySelector('[data-key="rot"] [data-v="lying"]').disabled = E.angle === "flatlay";
+    const rh = $("rotHint");
+    if (!ex && E.angle === "topstand") { rh.hidden = false; rh.textContent = "При виде строго сверху на стоящую бутылку поворот не виден, поэтому выбор отключён."; }
+    else if (!ex && E.angle === "flatlay") { rh.hidden = false; rh.textContent = "Во флэтлее поворот задаёт, какой стороной бутылка лежит к камере. «С наклоном» кладёт её по диагонали кадра."; }
+    else if (["q-left", "q-right", "p-left", "p-right"].includes(E.rot)) { rh.hidden = false; rh.textContent = "При повороте часть этикетки уйдёт из вида. Промт попросит не дорисовывать скрытую сторону."; }
+    else rh.hidden = true;
+
+    // composition: crop follows size, narrow verticals stay centered
+    const cn = $("cropNote");
+    cn.hidden = S.size !== "large";
+    cn.textContent = E.crop
+      ? "При крупном плане бутылка может выходить за край кадра. Это разрешение уже заложено в промт."
+      : "При взгляде камеры сверху бутылка остаётся целиком в кадре, без обреза.";
+    $("posLock").classList.toggle("is-locked", isNarrow());
+    $("posNote").hidden = !isNarrow();
+
+    // options that make no sense in the current setup
+    $("dutch").disabled = top; $("dutch").checked = E.dutch;
+    $("glow").disabled = top; $("glow").checked = E.glow;
+
+    // references
+    $("glassBox").hidden = !S.props.includes("glass");
+    const gi = $("glassThumb").querySelector("img");
+    gi.hidden = !glassImg; if (glassImg && gi.getAttribute("src") !== glassImg.src) gi.src = glassImg.src;
+    $("clearGlass").hidden = !glassImg;
+    $("glassName").textContent = glassImg ? glassImg.name : "Фото бокала (необязательно)";
+    if (syncText) { $("glassH").value = S.glassH; $("glassD").value = S.glassD; }
+    $("refUseBox").hidden = !refs.length;
+    $("refUseChips").classList.toggle("is-locked", S.exact);
+    $("exactBox").classList.toggle("on", S.exact);
+    setLock("stepComp", ex); setLock("stepRot", ex); setLock("stepCam", ex);
+    document.querySelectorAll('[data-multi="props"] button').forEach(b => b.disabled = ex && b.dataset.v !== "glass");
+    $("propsHint").textContent = ex ? "При точном копировании реквизит берётся с референса. Можно только добавить свой бокал или заменить им бокал с референса." : "Необязательно. Без выбора в кадре не будет посторонних предметов.";
+    $("glassSwapBox").hidden = !(refs.length && S.scene === "custom" && S.props.includes("glass") && (S.exact || S.refUse.includes("props")));
+    setLock("stepLight", ex || fromRef("light"));
+    $("lensRow").classList.toggle("is-locked", !ex && fromRef("lens"));
+    $("lensRef").hidden = ex || !fromRef("lens");
+
+    const dofRu = { shallow: "f/2", medium: "f/5.6", deep: "f/11" }[E.dof];
+    $("camSum").textContent = (fromRef("lens") ? "объектив из референса" : `${E.lens} мм · ${dofRu}`) + (E.dutch ? " · завал горизонта" : "");
+
+    // 3D layout sketch option
+    $("scheme").disabled = !V3 || ex;
+    $("schemeActions").hidden = !schemeOn();
+
+    renderBottleBlock();
+    const st = refStart();
+    $("refList").innerHTML = refs.map((r, i) => `<div class="ref"><img src="${r.src}" alt="${esc(r.name)}"><span class="n">${refsUsed() ? "Image " + (i + st) : "не в промте"}</span><button class="xbtn" data-i="${i}" aria-label="Убрать референс">×</button></div>`).join("");
+
+    $("checks").hidden = !E.notes.length;
+    $("checksList").innerHTML = E.notes.map(n => `<li>${esc(n)}</li>`).join("");
+
+    const sec = buildPrompt();
+    $("prompt").innerHTML = sec.map(([h, b]) => h ? `<span class="h">${esc(h)}:</span>\n${esc(b)}` : esc(b)).join("\n\n");
+    $("promptMeta").textContent = `${promptText().split(/\s+/).length} слов`;
+    renderThumbs(E); renderPreview(E); renderHandoff(); save();
+  }
+
+  let tt;
+  const toast = msg => { $("toast").textContent = msg; clearTimeout(tt); tt = setTimeout(() => $("toast").textContent = "", 2600); };
+  $("copyBtn").addEventListener("click", () => {
+    const txt = promptText();
+    pushHistory(txt);
+    const fallback = () => { const r = document.createRange(); r.selectNodeContents($("prompt")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast("Текст выделен, нажмите Ctrl+C"); };
+    try { navigator.clipboard.writeText(txt).then(() => toast("Промт скопирован"), fallback); } catch (e) { fallback(); }
+  });
+
+  syncMetaInputs();
+  render();
+  renderPresets(); renderHistory();
+  initCaps();
+})();
+</script>
+
+</body>
+</html>
