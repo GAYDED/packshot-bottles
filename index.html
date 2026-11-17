@@ -371,6 +371,7 @@ details.fine-tune .ft-body { display: flex; flex-direction: column; gap: 14px; m
               <button data-v="large">Крупно<small>~80%</small></button>
             </div>
             <p class="fine" id="cropNote" hidden></p>
+            <label class="check" id="flatVertBox" hidden><input type="checkbox" id="flatVert"><span>Флэтлей: бутылка вертикально, дно в обрез<small>Бутылка лежит вдоль вертикали кадра пробкой вверх, а дно уходит за нижний край. Размер в кадре задаёт, насколько сильный обрез.</small></span></label>
           </div>
         </div>
         <label class="check"><input type="checkbox" id="copySpace"><span>Оставить место под текст<small>Чистая зона на противоположной от бутылки стороне</small></span></label>
@@ -612,7 +613,7 @@ details.fine-tune .ft-body { display: flex; flex-direction: column; gap: 14px; m
     rot: "front", angle: "eye", lens: "85", dof: "medium", dutch: false,
     scene: "studio", bg: "#D9D4CB", surface: "matte", shadow: "soft",
     sceneText: "", refUse: ["light", "env", "style"], exact: false,
-    light: "softbox", glow: true, props: [], remember: true, scheme: false, glassH: "", glassD: "", glassSwap: true,
+    light: "softbox", glow: true, props: [], remember: true, scheme: false, glassH: "", glassD: "", glassSwap: true, flatVert: false,
     c: { people: true, hands: true, drink: true, text: true, single: true }
   };
   const KEY = "packshot-studio-v1", SIZES_KEY = "packshot-sizes-v1";
@@ -681,6 +682,7 @@ details.fine-tune .ft-body { display: flex; flex-direction: column; gap: 14px; m
   // crop by the frame edge: only for the large size, and not when the camera looks down at the bottle
   const NO_CROP_ANGLES = ["high", "steep", "topstand"];
   const cropFor = (size, angle) => size === "large" && !NO_CROP_ANGLES.includes(angle);
+  const flatVertAvailable = () => { const [a, b] = S.format.split(":").map(Number); return a >= b; };
   const refsUsed = () => refsActive() && (S.exact || S.refUse.length > 0);
   const topMode = a => a === "topstand" || a === "flatlay";
   const isNarrow = () => { const [a, b] = S.format.split(":").map(Number); return a / b < 0.7; };
@@ -694,6 +696,9 @@ details.fine-tune .ft-body { display: flex; flex-direction: column; gap: 14px; m
   function eff() {
     const E = structuredClone(S), notes = [];
     E.crop = cropFor(E.size, E.angle);
+    // flat lay in a square or landscape frame: the bottle may run vertically with its base cut by the bottom edge
+    E.flatVert = !!S.flatVert && E.angle === "flatlay" && !exactOn() && flatVertAvailable();
+    if (E.flatVert) E.crop = true;
     if (S.scene === "custom" && S.exact && !refs.length) notes.push("Для точного копирования сцены добавьте хотя бы один референс.");
     if (S.props.includes("glass") && !S.glassSwap && (exactOn() || fromRef("props"))) notes.push("В кадре может оказаться два бокала: с референса и ваш. Включите «Заменить бокал с референса на мой».");
     if (exactOn()) {
@@ -742,6 +747,7 @@ details.fine-tune .ft-body { display: flex; flex-direction: column; gap: 14px; m
     bindCheck("exact", () => S.exact, v => S.exact = v),
     bindCheck("scheme", () => S.scheme, v => S.scheme = v),
     bindCheck("glassSwap", () => S.glassSwap, v => S.glassSwap = v),
+    bindCheck("flatVert", () => S.flatVert, v => S.flatVert = v),
     bindCheck("remember", () => S.remember, v => { S.remember = v; if (v) queueRemember(); }),
     ...["people", "hands", "drink", "text", "single"].map(k => bindCheck("c-" + k, () => S.c[k], v => S.c[k] = v))
   ];
@@ -1201,6 +1207,7 @@ details.fine-tune .ft-body { display: flex; flex-direction: column; gap: 14px; m
         const tan2 = 2 * Math.tan(vfov / 2);
         const mode = o.angle === "flatlay" ? "flat" : o.angle === "topstand" ? "topstand" : "side";
         const lying = mode === "flat" || (mode === "side" && o.rot === "lying");
+        const vert = portrait || (mode === "flat" && !!o.flatVert);   // flat-lay bottle runs along the frame's vertical
 
         yawG.rotation.set(0, 0, 0); pose.rotation.set(0, 0, 0); pose.position.set(0, 0, 0); spin.rotation.set(0, 0, 0);
         if (mode === "side") {
@@ -1211,7 +1218,7 @@ details.fine-tune .ft-body { display: flex; flex-direction: column; gap: 14px; m
         if (mode === "flat") {
           // label up by default; the rotation options roll the bottle around its axis, "tilt" lays it diagonally
           spin.rotation.y = Math.PI / 2 + ({ "q-left": -0.72, "q-right": 0.72, "p-left": -Math.PI / 2, "p-right": Math.PI / 2 }[o.rot] || 0);
-          yawG.rotation.y = (portrait ? -Math.PI / 2 : 0) + (o.rot === "tilt" ? 0.5 : 0);
+          yawG.rotation.y = (vert ? -Math.PI / 2 : 0) + (o.rot === "tilt" ? 0.5 : 0);
         }
         wall.visible = mode === "side";
         // the glass always stands upright beside the bottle, whatever the bottle does
@@ -1219,7 +1226,7 @@ details.fine-tune .ft-body { display: flex; flex-direction: column; gap: 14px; m
         if (o.glass) {
           const gr = o.glass.d / 2, side = o.pos === "right" ? -1 : 1, gap = R + gr + 0.06;
           tumbler.scale.set(o.glass.d, o.glass.h, o.glass.d);
-          if (mode === "flat") tumbler.position.set(portrait ? side * gap : 0.15, 0, portrait ? 0.12 : -gap);
+          if (mode === "flat") tumbler.position.set(vert ? side * gap : 0.15, 0, vert ? 0.12 : -gap);
           else if (lying) tumbler.position.set(0.15 * side, 0, -gap);
           else tumbler.position.set(side * gap, 0, 0.1);
         }
@@ -1233,8 +1240,9 @@ details.fine-tune .ft-body { display: flex; flex-direction: column; gap: 14px; m
           d = 2 * R / (f * tan2 * Math.min(1, aspect));
           target.set(0, 0.95, 0); cam.position.set(0, 0.95 + d, 0.0001); cam.up.set(0, 0, -1);
         } else if (mode === "flat") {
-          const V = portrait ? 1 : 2 * R, Hz = portrait ? 2 * R : 1;
-          d = Math.max(V / ((portrait ? frac : 0.9) * tan2), Hz / ((portrait ? 0.9 : frac) * tan2 * aspect)) + R;
+          const V = vert ? 1 : 2 * R, Hz = vert ? 2 * R : 1;
+          const fl = o.flatVert && !portrait ? { small: 1.1, medium: 1.2, large: 1.35 }[o.size] : frac;
+          d = Math.max(V / ((vert ? fl : 0.9) * tan2), Hz / ((vert ? 0.9 : fl) * tan2 * aspect)) + R;
           target.set(0, R, 0); cam.position.set(0, R + d, 0.0001); cam.up.set(0, 0, -1);
         } else {
           const el = { eye: 0, low: -0.16, verylow: -0.3, hero: -0.3, high: 0.42, steep: 1.05 }[o.angle] || 0;
@@ -1256,7 +1264,8 @@ details.fine-tune .ft-body { display: flex; flex-direction: column; gap: 14px; m
         if (mode === "side" && o.angle === "hero") offY = -H * 0.35;
         if (o.crop && !(mode === "side" && o.angle === "hero")) {
           if (mode === "topstand") offY = -H * 0.22;
-          else if (lying && !(mode === "flat" && portrait)) offX -= W * 0.12;
+          else if (mode === "flat" && o.flatVert && !portrait) offY = -H * ({ small: 1.1, medium: 1.2, large: 1.35 }[o.size] / 2 - 0.44);  // cap stays in, base leaves the bottom edge
+          else if (lying && !(mode === "flat" && vert)) offX -= W * 0.12;
           else offY = -H * 0.12;
         }
         if (offX || offY) cam.setViewOffset(W, H, offX, offY, W, H); else cam.clearViewOffset();
@@ -1293,7 +1302,7 @@ details.fine-tune .ft-body { display: flex; flex-direction: column; gap: 14px; m
         c.style.width = w + "px"; c.style.height = h + "px";
       });
       if (!V3) return;
-      const key = JSON.stringify([w, h, base.ratio, E.format, E.angle, E.rot, E.size, E.pos, E.crop, E.scene, E.bg, E.lens, base.glass]);
+      const key = JSON.stringify([w, h, base.ratio, E.format, E.angle, E.rot, E.size, E.pos, E.crop, E.scene, E.bg, E.lens, base.glass, E.flatVert]);
       if (grid._thumbKey === key) return;
       grid._thumbKey = key;
       btns.forEach(b => {
@@ -1526,10 +1535,12 @@ ${img1} only shows what the product looks like. Do not copy its frontal camera a
       const pct = T.pct[E.size];
       let comp;
       if (topstand) comp = `Seen from above, the bottle is ${T.pos[E.pos]}; its cap and shoulders span about ${T.topPct[E.size]}% of the frame's shorter side.`;
+      else if (flat && E.flatVert) comp = `The lying bottle is turned to run vertically through the frame, ${T.pos[E.pos]}, cap toward the top. It is longer than the frame is tall (about ${Math.round({ small: 1.1, medium: 1.2, large: 1.35 }[E.size] * 100)}% of the frame height), so its base end is cut off by the bottom edge of the frame; the cap and the main part of the label stay inside the frame.`;
       else if (flat) comp = `The lying bottle runs along the frame's longer side, ${T.pos[E.pos]}; its length spans about ${pct}% of the frame's longer side.`;
       else if (lying) comp = `The lying bottle is ${T.pos[E.pos]}; its length spans about ${Math.round(pct * 0.8)}% of the frame width.`;
       else comp = `The bottle is ${T.pos[E.pos]}, ${T.size[E.size]}.`;
-      if (E.crop) comp += topstand
+      if (E.flatVert) { /* crop already described */ }
+      else if (E.crop) comp += topstand
         ? " A bold crop is allowed: the bottle may be partly cut by the frame edge, but the cap stays inside the frame."
         : lying
           ? " A bold crop is allowed: the base end of the bottle may be cut off by the frame edge; the cap and the main part of the label stay inside the frame."
@@ -1545,7 +1556,7 @@ ${img1} only shows what the product looks like. Do not copy its frontal camera a
       sec.push(["BOTTLE ORIENTATION", topstand
         ? "The bottle stands upright on the surface. Do not lay it down and do not tilt it toward the camera."
         : flat
-          ? flatOrientation(E.rot, fa < fb ? "top" : "left")
+          ? flatOrientation(E.rot, fa < fb || E.flatVert ? "top" : "left")
           : T.rot[E.rot]]);
 
       let camT = (fromRef("lens") ? `Match the focal length, perspective and depth of field of ${refRange}.` : `${T.lens[E.lens]} ${cap(top ? T.dof[E.dof].replace("background", "the surface around the bottle") : T.dof[E.dof])}.`);
@@ -1691,7 +1702,8 @@ ${img1} only shows what the product looks like. Do not copy its frontal camera a
 
     // composition: crop follows size, narrow verticals stay centered
     const cn = $("cropNote");
-    cn.hidden = S.size !== "large";
+    cn.hidden = S.size !== "large" || E.flatVert;
+    $("flatVertBox").hidden = !(S.angle === "flatlay" && flatVertAvailable() && !exactOn());
     cn.textContent = E.crop
       ? "При крупном плане бутылка может выходить за край кадра. Это разрешение уже заложено в промт."
       : "При взгляде камеры сверху бутылка остаётся целиком в кадре, без обреза.";
